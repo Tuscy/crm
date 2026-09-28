@@ -172,6 +172,7 @@ model Client {
   billingPrice         Decimal?     @db.Decimal(12, 2)
   billingCurrency      String?      @default("USD")
   billingNotes         String?
+  xeroContactId        String? // set once mapped via Settings → Xero
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
   package              PackageType?
@@ -186,6 +187,8 @@ model Client {
   googleAdsConnections GoogleAdsConnection[]
   siteBuilds           SiteBuild[]
   gbpPosts             GBPPost[]
+
+  @@index([xeroContactId])
 }
 
 model GoogleAdsSettings {
@@ -393,6 +396,17 @@ model AnalyticsCredential {
 
   @@index([clientId])
   @@unique([clientId, type])
+}
+
+/// StickySites' own Xero organisation — connected once, read-only scopes.
+/// Xero rotates the refresh token on every refresh, so it is rewritten each time.
+model XeroCredential {
+  id           String   @id @default(cuid())
+  tenantId     String   @unique // Xero's organisation identifier
+  tenantName   String?
+  refreshToken String // encrypted at rest, same approach as AnalyticsCredential
+  connectedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 // --- Phase 6 additions ---
