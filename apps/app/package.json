@@ -16,6 +16,7 @@
     "@stky/security": "workspace:*",
     "@stky/sites": "workspace:*",
     "@stky/ui": "workspace:*",
+    "@vercel/functions": "^3.9.9",
     "bcryptjs": "^2.4.3",
     "google-ads-api": "^23.0.0",
     "googleapis": "^144.0.0",
