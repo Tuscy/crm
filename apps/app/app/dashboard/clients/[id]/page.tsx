@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getClientById } from "@/lib/server/actions/clients";
 import { EditClientPackageForm } from "@/components/crm/edit-client-package-form";
 import { SiteBuildsTab } from "@/components/crm/site-builds-tab";
+import { ClientInvoicesCard } from "@/components/xero/client-invoices-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 
 const PACKAGE_LABELS: Record<string, string> = {
@@ -321,6 +322,8 @@ export default async function ClientDetailPage({
               </CardContent>
             </Card>
           </div>
+
+          <ClientInvoicesCard clientId={client.id} />
 
           {client.activityLogs.length > 0 ? (
             <Card>

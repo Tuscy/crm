@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
+import { prisma } from "@stky/db";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,12 @@ function SettingsCard({
   );
 }
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const xeroConnected =
+    envSet("XERO_CLIENT_ID") &&
+    envSet("XERO_CLIENT_SECRET") &&
+    (await prisma.xeroCredential.count()) > 0;
+
   const adsReady =
     envSet("GOOGLE_ADS_DEVELOPER_TOKEN") &&
     envSet("GOOGLE_ADS_CLIENT_ID") &&
@@ -83,6 +89,13 @@ export default function SettingsPage() {
           description="Connect GA4 properties and Search Console sites."
           href="/dashboard/settings/analytics"
           status={<StatusDot ok={analyticsReady} />}
+        />
+
+        <SettingsCard
+          title="Xero"
+          description="Connect Xero and map clients to Xero contacts for invoice status."
+          href="/dashboard/settings/xero"
+          status={<StatusDot ok={xeroConnected} />}
         />
 
         <SettingsCard
