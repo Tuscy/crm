@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useTransition } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button, Card, CardContent } from "@stky/ui";
@@ -58,24 +58,44 @@ export function EnrollmentsTable({
 }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [localEnrollments, setLocalEnrollments] = useState(enrollments);
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
 
-  function handleCancel(id: string) {
-    if (!window.confirm("Cancel this enrollment? No further emails will send.")) {
-      return;
-    }
-    startTransition(async () => {
-      try {
-        await cancelEnrollment(id);
-        toast.success("Enrollment cancelled");
-        router.refresh();
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Failed to cancel");
-      }
+  useEffect(() => {
+    setLocalEnrollments(enrollments);
+  }, [enrollments]);
+
+  function setPending(id: string, isPending: boolean) {
+    setPendingIds((prev) => {
+      const next = new Set(prev);
+      if (isPending) next.add(id);
+      else next.delete(id);
+      return next;
     });
   }
 
-  if (enrollments.length === 0) {
+  async function handleCancel(id: string) {
+    if (!window.confirm("Cancel this enrollment? No further emails will send.")) {
+      return;
+    }
+    const previous = localEnrollments;
+    setLocalEnrollments((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, status: "CANCELLED" } : e))
+    );
+    setPending(id, true);
+    try {
+      await cancelEnrollment(id);
+      toast.success("Enrollment cancelled");
+      router.refresh();
+    } catch (e) {
+      setLocalEnrollments(previous);
+      toast.error(e instanceof Error ? e.message : "Failed to cancel");
+    } finally {
+      setPending(id, false);
+    }
+  }
+
+  if (localEnrollments.length === 0) {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
@@ -99,7 +119,7 @@ export function EnrollmentsTable({
             </tr>
           </thead>
           <tbody>
-            {enrollments.map((e) => (
+            {localEnrollments.map((e) => (
               <Fragment key={e.id}>
                 <tr className="border-b border-border last:border-0">
                   <td className="px-4 py-3">
@@ -146,7 +166,7 @@ export function EnrollmentsTable({
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={pending}
+                          disabled={pendingIds.has(e.id)}
                           onClick={() => handleCancel(e.id)}
                         >
                           Cancel

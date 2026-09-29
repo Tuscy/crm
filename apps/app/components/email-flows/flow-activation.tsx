@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@stky/ui";
@@ -20,30 +20,42 @@ export function FlowActivation({
   hasSteps: boolean;
 }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [localActive, setLocalActive] = useState(active);
+  const [pending, setPending] = useState(false);
 
-  function run(
+  useEffect(() => {
+    setLocalActive(active);
+  }, [active]);
+
+  async function run(
     fn: () => Promise<unknown>,
-    success: string
+    success: string,
+    optimisticActive?: boolean
   ) {
-    startTransition(async () => {
-      try {
-        await fn();
-        toast.success(success);
-        router.refresh();
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Action failed");
-      }
-    });
+    const previous = localActive;
+    if (optimisticActive !== undefined) setLocalActive(optimisticActive);
+    setPending(true);
+    try {
+      await fn();
+      toast.success(success);
+      router.refresh();
+    } catch (e) {
+      if (optimisticActive !== undefined) setLocalActive(previous);
+      toast.error(e instanceof Error ? e.message : "Action failed");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {active ? (
+      {localActive ? (
         <Button
           variant="outline"
           disabled={pending}
-          onClick={() => run(() => pauseEmailFlow(flowId), "Flow paused")}
+          onClick={() =>
+            run(() => pauseEmailFlow(flowId), "Flow paused", false)
+          }
         >
           {pending ? "Working…" : "Pause"}
         </Button>
@@ -55,7 +67,8 @@ export function FlowActivation({
           onClick={() =>
             run(
               () => activateEmailFlow(flowId),
-              "Flow activated — save your draft first if you made changes"
+              "Flow activated — save your draft first if you made changes",
+              true
             )
           }
         >

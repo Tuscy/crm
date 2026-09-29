@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button, Card, CardContent } from "@stky/ui";
@@ -21,8 +21,22 @@ type PersonalTask = {
 export function PersonalTaskList({ tasks }: { tasks: PersonalTask[] }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const [pending, startTransition] = useTransition();
+  const [localTasks, setLocalTasks] = useState(tasks);
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLocalTasks(tasks);
+  }, [tasks]);
+
+  function setPending(taskId: string, isPending: boolean) {
+    setPendingIds((prev) => {
+      const next = new Set(prev);
+      if (isPending) next.add(taskId);
+      else next.delete(taskId);
+      return next;
+    });
+  }
 
   async function handleAdd(formData: FormData) {
     setError(null);
@@ -40,29 +54,39 @@ export function PersonalTaskList({ tasks }: { tasks: PersonalTask[] }) {
     }
   }
 
-  function handleToggle(taskId: string) {
+  async function handleToggle(taskId: string) {
     setError(null);
-    startTransition(async () => {
-      try {
-        await toggleTaskCompleted(taskId);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to update task");
-      }
-    });
+    const previous = localTasks;
+    setLocalTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, completed: !t.completed } : t))
+    );
+    setPending(taskId, true);
+    try {
+      await toggleTaskCompleted(taskId);
+      router.refresh();
+    } catch (e) {
+      setLocalTasks(previous);
+      setError(e instanceof Error ? e.message : "Failed to update task");
+    } finally {
+      setPending(taskId, false);
+    }
   }
 
-  function handleDelete(taskId: string) {
+  async function handleDelete(taskId: string) {
     if (!confirm("Delete this task?")) return;
     setError(null);
-    startTransition(async () => {
-      try {
-        await deleteTask(taskId);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to delete task");
-      }
-    });
+    const previous = localTasks;
+    setLocalTasks((prev) => prev.filter((t) => t.id !== taskId));
+    setPending(taskId, true);
+    try {
+      await deleteTask(taskId);
+      router.refresh();
+    } catch (e) {
+      setLocalTasks(previous);
+      setError(e instanceof Error ? e.message : "Failed to delete task");
+    } finally {
+      setPending(taskId, false);
+    }
   }
 
   return (
@@ -100,11 +124,11 @@ export function PersonalTaskList({ tasks }: { tasks: PersonalTask[] }) {
 
       <Card>
         <CardContent className="pt-6">
-          {tasks.length === 0 ? (
+          {localTasks.length === 0 ? (
             <p className="text-sm text-muted-foreground">No tasks yet.</p>
           ) : (
             <ul className="divide-y">
-              {tasks.map((task) => (
+              {localTasks.map((task) => (
                 <li
                   key={task.id}
                   className="flex items-center justify-between gap-3 py-3"
@@ -114,7 +138,7 @@ export function PersonalTaskList({ tasks }: { tasks: PersonalTask[] }) {
                       type="checkbox"
                       checked={task.completed}
                       onChange={() => handleToggle(task.id)}
-                      disabled={pending}
+                      disabled={pendingIds.has(task.id)}
                       className="h-4 w-4 shrink-0"
                     />
                     <div className="min-w-0">
@@ -148,7 +172,7 @@ export function PersonalTaskList({ tasks }: { tasks: PersonalTask[] }) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    disabled={pending}
+                    disabled={pendingIds.has(task.id)}
                     onClick={() => handleDelete(task.id)}
                   >
                     Delete

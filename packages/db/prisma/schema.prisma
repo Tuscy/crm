@@ -99,6 +99,9 @@ model Lead {
   notes      Note[]
   tasks      Task[]
   conversion LeadConversion?
+
+  @@index([status])
+  @@index([source])
 }
 
 model LeadConversion {
@@ -122,6 +125,9 @@ model Deal {
   probability Int?
   packageType PackageType?
   lead        Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([stage])
 }
 
 model Task {
@@ -156,6 +162,8 @@ model Note {
   leadId    String
   createdAt DateTime @default(now())
   lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
 }
 
 model Client {

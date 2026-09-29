@@ -1,5 +1,6 @@
 "use server";
 
+import { waitUntil } from "@vercel/functions";
 import { prisma } from "@stky/db";
 import type { EmailFlowTrigger, Prisma } from "@stky/db";
 import { logStky } from "@/lib/observability";
@@ -32,6 +33,7 @@ export async function enrolInFlow(flowId: string, contact: ContactRef) {
   if (!flow.active || !flow.n8nWorkflowId || !flow.n8nWebhookPath) {
     throw new Error("Flow is not active");
   }
+  const n8nWebhookPath = flow.n8nWebhookPath;
 
   const contactData = leadId
     ? await prisma.lead.findUnique({ where: { id: leadId } })
@@ -50,30 +52,36 @@ export async function enrolInFlow(flowId: string, contact: ContactRef) {
     },
   });
 
-  // Kick off the n8n workflow via its webhook trigger.
-  try {
-    const res = await fetch(n8nWebhookUrl(flow.n8nWebhookPath), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enrollmentId: enrollment.id, contact: snapshot }),
-    });
-    if (!res.ok) {
-      throw new Error(`n8n webhook returned ${res.status}`);
-    }
-  } catch (e) {
-    // Mark the enrollment failed but don't throw on auto-enrol paths — a single
-    // failed enrolment shouldn't break the originating CRM action.
-    await prisma.emailFlowEnrollment.update({
-      where: { id: enrollment.id },
-      data: { status: "FAILED" },
-    });
-    logStky("flow_enrol_webhook_failed", {
-      flowId,
-      enrollmentId: enrollment.id,
-      error: e instanceof Error ? e.message : "unknown",
-    });
-    throw e;
-  }
+  // Kick off the n8n workflow via its webhook trigger. Deferred with waitUntil
+  // so the originating CRM action returns immediately instead of waiting on
+  // this third-party call — a bare unawaited fetch() would risk Vercel
+  // freezing/terminating the function before the request completes.
+  waitUntil(
+    (async () => {
+      try {
+        const res = await fetch(n8nWebhookUrl(n8nWebhookPath), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enrollmentId: enrollment.id, contact: snapshot }),
+        });
+        if (!res.ok) {
+          throw new Error(`n8n webhook returned ${res.status}`);
+        }
+      } catch (e) {
+        // Mark the enrollment failed but never throw here — the originating
+        // CRM action has already returned by the time this runs.
+        await prisma.emailFlowEnrollment.update({
+          where: { id: enrollment.id },
+          data: { status: "FAILED" },
+        });
+        logStky("flow_enrol_webhook_failed", {
+          flowId,
+          enrollmentId: enrollment.id,
+          error: e instanceof Error ? e.message : "unknown",
+        });
+      }
+    })()
+  );
 
   return enrollment;
 }

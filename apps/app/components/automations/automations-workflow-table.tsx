@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
@@ -21,22 +21,44 @@ function editorUrl(base: string, workflowId: string): string {
 
 export function AutomationsWorkflowTable({ workflows, n8nBaseUrl }: Props) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [localWorkflows, setLocalWorkflows] = useState(workflows);
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
-  function onToggle(id: string, nextActive: boolean) {
+  useEffect(() => {
+    setLocalWorkflows(workflows);
+  }, [workflows]);
+
+  function setPending(id: string, isPending: boolean) {
+    setPendingIds((prev) => {
+      const next = new Set(prev);
+      if (isPending) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  async function onToggle(id: string, nextActive: boolean) {
     setError(null);
-    startTransition(async () => {
+    const previous = localWorkflows;
+    setLocalWorkflows((prev) =>
+      prev.map((w) => (w.id === id ? { ...w, active: nextActive } : w))
+    );
+    setPending(id, true);
+    try {
       const result = await toggleN8nWorkflowActive(id, nextActive);
       if (result.ok) {
         router.refresh();
       } else {
+        setLocalWorkflows(previous);
         setError(result.error);
       }
-    });
+    } finally {
+      setPending(id, false);
+    }
   }
 
-  if (workflows.length === 0) {
+  if (localWorkflows.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -67,7 +89,7 @@ export function AutomationsWorkflowTable({ workflows, n8nBaseUrl }: Props) {
             </tr>
           </thead>
           <tbody>
-            {workflows.map((w) => (
+            {localWorkflows.map((w) => (
               <tr key={w.id} className="border-b last:border-0">
                 <td className="p-3">
                   <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -75,7 +97,7 @@ export function AutomationsWorkflowTable({ workflows, n8nBaseUrl }: Props) {
                       type="checkbox"
                       className="h-4 w-4 rounded border-input"
                       checked={w.active}
-                      disabled={pending}
+                      disabled={pendingIds.has(w.id)}
                       onChange={(e) => onToggle(w.id, e.target.checked)}
                     />
                     <span className="sr-only">Toggle active</span>

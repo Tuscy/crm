@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
@@ -182,20 +182,30 @@ export function ContactsManager({ rows }: { rows: ContactRow[] }) {
     { mode: "closed" } | { mode: "create" } | { mode: "edit"; row: ContactRow }
   >({ mode: "closed" });
   const [search, setSearch] = useState("");
+  const [localRows, setLocalRows] = useState(rows);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLocalRows(rows);
+  }, [rows]);
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((row) => row.name.toLowerCase().includes(q));
-  }, [rows, search]);
+    if (!q) return localRows;
+    return localRows.filter((row) => row.name.toLowerCase().includes(q));
+  }, [localRows, search]);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this contact?")) return;
+    const previous = localRows;
+    setLocalRows((prev) => prev.filter((row) => row.id !== id));
     setPendingDeleteId(id);
     try {
       await deleteContact(id);
       router.refresh();
+    } catch (e) {
+      setLocalRows(previous);
+      throw e;
     } finally {
       setPendingDeleteId(null);
     }

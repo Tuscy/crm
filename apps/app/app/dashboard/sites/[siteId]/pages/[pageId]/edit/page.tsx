@@ -4,8 +4,6 @@ import { getPageEditorBundle, togglePagePublished } from "@/lib/server/actions/s
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import { SectionEditor } from "@/components/sites/section-editor";
 
-export const dynamic = "force-dynamic";
-
 export default async function EditPagePage({
   params,
 }: {

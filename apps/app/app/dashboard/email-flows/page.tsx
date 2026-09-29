@@ -4,8 +4,6 @@ import { listEmailFlows } from "@/lib/email-flows/flows";
 import { NewFlowButton } from "@/components/email-flows/new-flow-button";
 import { DeleteFlowButton } from "@/components/email-flows/delete-flow-button";
 
-export const dynamic = "force-dynamic";
-
 const TRIGGER_LABELS: Record<string, string> = {
   LEAD_CREATED: "Lead created",
   LEAD_STATUS_CHANGED: "Lead status changed",

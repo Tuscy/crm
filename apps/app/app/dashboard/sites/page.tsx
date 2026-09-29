@@ -3,8 +3,6 @@ import { listSites, createSite } from "@/lib/server/actions/sites";
 import { getClients } from "@/lib/server/actions/clients";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 
-export const dynamic = "force-dynamic";
-
 export default async function SitesPage() {
   const [sites, clients] = await Promise.all([listSites(), getClients()]);
 

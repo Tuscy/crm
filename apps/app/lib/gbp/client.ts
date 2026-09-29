@@ -1,4 +1,5 @@
-import { google } from "googleapis";
+import { OAuth2Client } from "google-auth-library";
+import { businessprofileperformance } from "googleapis/build/src/apis/businessprofileperformance";
 import type {
   CreatePostInput,
   GBPInsightMetric,
@@ -13,12 +14,12 @@ import type {
  * Reviews and local posts live on the My Business v4 REST API, which is not
  * bundled in the googleapis npm client — those calls go through the OAuth2
  * client's .request(). Insights use the current Business Profile Performance
- * API via google.businessprofileperformance().
+ * API via businessprofileperformance().
  */
 const V4_BASE = "https://mybusiness.googleapis.com/v4";
 
 function makeAuthClient(refreshToken: string) {
-  const auth = new google.auth.OAuth2(
+  const auth = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     process.env.GOOGLE_OAUTH_REDIRECT_URL
@@ -203,7 +204,7 @@ export async function getInsights(
   rangeDays: number
 ): Promise<GBPInsights> {
   const auth = makeAuthClient(refreshToken);
-  const api = google.businessprofileperformance({ version: "v1", auth });
+  const api = businessprofileperformance({ version: "v1", auth });
 
   const end = new Date();
   const start = new Date();

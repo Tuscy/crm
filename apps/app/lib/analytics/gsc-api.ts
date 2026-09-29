@@ -1,4 +1,5 @@
-import { google } from "googleapis";
+import { OAuth2Client } from "google-auth-library";
+import { searchconsole } from "googleapis/build/src/apis/searchconsole";
 
 export type GscQueryRow = {
   query: string;
@@ -16,7 +17,7 @@ export type GscPageRow = {
 };
 
 function makeAuthClient(refreshToken: string) {
-  const auth = new google.auth.OAuth2(
+  const auth = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     process.env.GOOGLE_OAUTH_REDIRECT_URL
@@ -41,7 +42,7 @@ export async function fetchGscQueries(
   range: string
 ): Promise<GscQueryRow[]> {
   const auth = makeAuthClient(refreshToken);
-  const sc = google.searchconsole({ version: "v1", auth });
+  const sc = searchconsole({ version: "v1", auth });
   const { startDate, endDate } = rangeToGscDates(range);
 
   const res = await sc.searchanalytics.query({
@@ -72,7 +73,7 @@ export async function fetchGscPages(
   range: string
 ): Promise<GscPageRow[]> {
   const auth = makeAuthClient(refreshToken);
-  const sc = google.searchconsole({ version: "v1", auth });
+  const sc = searchconsole({ version: "v1", auth });
   const { startDate, endDate } = rangeToGscDates(range);
 
   const res = await sc.searchanalytics.query({

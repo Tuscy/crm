@@ -3,8 +3,6 @@ import { notFound } from "next/navigation";
 import { getSiteBuildById } from "@/lib/server/actions/site-builds";
 import { SiteBuildDetail } from "@/components/crm/site-build-detail";
 
-export const dynamic = "force-dynamic";
-
 export default async function SiteBuildDetailPage({
   params,
 }: {

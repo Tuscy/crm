@@ -2,8 +2,6 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import { prisma } from "@stky/db";
 
-export const dynamic = "force-dynamic";
-
 function envSet(key: string): boolean {
   return Boolean(process.env[key]?.trim());
 }

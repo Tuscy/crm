@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@stky/ui";
@@ -14,9 +14,10 @@ export function DeleteTemplateButton({
   name: string;
 }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
+  const [deleted, setDeleted] = useState(false);
 
-  function handleDelete() {
+  async function handleDelete() {
     if (
       !window.confirm(
         `Delete template "${name}"? This cannot be undone. Templates used by active flows cannot be deleted.`
@@ -24,16 +25,21 @@ export function DeleteTemplateButton({
     ) {
       return;
     }
-    startTransition(async () => {
-      try {
-        await deleteEmailTemplate(id);
-        toast.success("Template deleted");
-        router.refresh();
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Failed to delete template");
-      }
-    });
+    setDeleted(true);
+    setPending(true);
+    try {
+      await deleteEmailTemplate(id);
+      toast.success("Template deleted");
+      router.refresh();
+    } catch (e) {
+      setDeleted(false);
+      toast.error(e instanceof Error ? e.message : "Failed to delete template");
+    } finally {
+      setPending(false);
+    }
   }
+
+  if (deleted) return null;
 
   return (
     <Button

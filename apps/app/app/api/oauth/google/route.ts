@@ -13,7 +13,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { google } from "googleapis";
+import { OAuth2Client } from "google-auth-library";
 import { auth } from "@/auth";
 
 const SCOPES: Record<string, string> = {
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const oauthClient = new google.auth.OAuth2(
+  const oauthClient = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     process.env.GOOGLE_OAUTH_REDIRECT_URL

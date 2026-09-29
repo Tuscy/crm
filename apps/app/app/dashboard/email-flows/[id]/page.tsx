@@ -5,8 +5,6 @@ import { getStaffUsers } from "@/lib/server/actions/tasks";
 import { FlowEditor } from "@/components/email-flows/flow-editor";
 import { parseSteps } from "@/lib/email-flows/types";
 
-export const dynamic = "force-dynamic";
-
 export default async function FlowEditorPage({
   params,
 }: {

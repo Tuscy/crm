@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@stky/ui";
@@ -8,9 +8,10 @@ import { deleteEmailFlow } from "@/lib/email-flows/flows";
 
 export function DeleteFlowButton({ id, name }: { id: string; name: string }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
+  const [deleted, setDeleted] = useState(false);
 
-  function handleDelete() {
+  async function handleDelete() {
     if (
       !window.confirm(
         `Delete flow "${name}"? This removes the flow and its enrollment history, and deletes the workflow from n8n. This cannot be undone.`
@@ -18,16 +19,21 @@ export function DeleteFlowButton({ id, name }: { id: string; name: string }) {
     ) {
       return;
     }
-    startTransition(async () => {
-      try {
-        await deleteEmailFlow(id);
-        toast.success("Flow deleted");
-        router.refresh();
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Failed to delete flow");
-      }
-    });
+    setDeleted(true);
+    setPending(true);
+    try {
+      await deleteEmailFlow(id);
+      toast.success("Flow deleted");
+      router.refresh();
+    } catch (e) {
+      setDeleted(false);
+      toast.error(e instanceof Error ? e.message : "Failed to delete flow");
+    } finally {
+      setPending(false);
+    }
   }
+
+  if (deleted) return null;
 
   return (
     <Button

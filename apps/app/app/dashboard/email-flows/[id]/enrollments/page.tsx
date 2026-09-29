@@ -3,8 +3,6 @@ import { notFound } from "next/navigation";
 import { getFlowWithEnrollments } from "@/lib/email-flows/enrollments";
 import { EnrollmentsTable } from "@/components/email-flows/enrollments-table";
 
-export const dynamic = "force-dynamic";
-
 function contactName(snapshot: unknown, fallback: string): string {
   if (snapshot && typeof snapshot === "object") {
     const s = snapshot as Record<string, unknown>;

@@ -1,4 +1,5 @@
-import { google } from "googleapis";
+import { OAuth2Client } from "google-auth-library";
+import { analyticsdata } from "googleapis/build/src/apis/analyticsdata";
 import { normaliseGa4PropertyId } from "./credentials";
 
 export type Ga4OverviewResult = {
@@ -16,7 +17,7 @@ export type Ga4PageRow = {
 };
 
 function makeAuthClient(refreshToken: string) {
-  const auth = new google.auth.OAuth2(
+  const auth = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     process.env.GOOGLE_OAUTH_REDIRECT_URL
@@ -44,7 +45,7 @@ export async function fetchGa4Overview(
   range: string
 ): Promise<Ga4OverviewResult> {
   const auth = makeAuthClient(refreshToken);
-  const api = google.analyticsdata({ version: "v1beta", auth });
+  const api = analyticsdata({ version: "v1beta", auth });
   const property = normaliseGa4PropertyId(accountId);
   const { startDate, endDate } = rangeToGa4Dates(range);
 
@@ -79,7 +80,7 @@ export async function fetchGa4Pages(
   range: string
 ): Promise<Ga4PageRow[]> {
   const auth = makeAuthClient(refreshToken);
-  const api = google.analyticsdata({ version: "v1beta", auth });
+  const api = analyticsdata({ version: "v1beta", auth });
   const property = normaliseGa4PropertyId(accountId);
   const { startDate, endDate } = rangeToGa4Dates(range);
 

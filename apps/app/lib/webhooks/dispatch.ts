@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { waitUntil } from "@vercel/functions";
 import { logStky } from "@/lib/observability";
 
 export type CrmWebhookEvent =
@@ -24,25 +25,32 @@ export async function dispatchCrmWebhook(
 
   const sig = crypto.createHmac("sha256", secret).update(body).digest("hex");
 
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Stky-Signature": `sha256=${sig}`,
-      },
-      body,
-    });
-    if (!res.ok) {
-      logStky("webhook_http_error", {
-        event,
-        status: res.status,
-      });
-    }
-  } catch (e) {
-    logStky("webhook_fetch_error", {
-      event,
-      message: e instanceof Error ? e.message : "unknown",
-    });
-  }
+  // Deferred with waitUntil so the originating CRM action returns immediately
+  // instead of waiting on this third-party call — a bare unawaited fetch()
+  // would risk Vercel freezing/terminating the function before it completes.
+  waitUntil(
+    (async () => {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Stky-Signature": `sha256=${sig}`,
+          },
+          body,
+        });
+        if (!res.ok) {
+          logStky("webhook_http_error", {
+            event,
+            status: res.status,
+          });
+        }
+      } catch (e) {
+        logStky("webhook_fetch_error", {
+          event,
+          message: e instanceof Error ? e.message : "unknown",
+        });
+      }
+    })()
+  );
 }

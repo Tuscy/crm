@@ -2,8 +2,6 @@ import { auth } from "@/auth";
 import { MobileDashboardShell } from "@/components/dashboard/mobile-dashboard-shell";
 import { SignOutForm } from "./sign-out-form";
 
-export const dynamic = "force-dynamic";
-
 export default async function DashboardLayout({
   children,
 }: {

@@ -23,6 +23,19 @@ export async function GET(request: NextRequest) {
     const source = searchParams.get("source");
     const q = searchParams.get("q");
 
+    // Default and max cap keep an unfiltered request from pulling every lead
+    // in one query as the table grows; existing callers that don't pass
+    // these params keep getting a bare array, just capped at DEFAULT_LIMIT
+    // instead of unbounded.
+    const DEFAULT_LIMIT = 200;
+    const MAX_LIMIT = 500;
+    const limitParam = Number(searchParams.get("limit"));
+    const limit = Number.isFinite(limitParam) && limitParam > 0
+      ? Math.min(limitParam, MAX_LIMIT)
+      : DEFAULT_LIMIT;
+    const offsetParam = Number(searchParams.get("offset"));
+    const offset = Number.isFinite(offsetParam) && offsetParam > 0 ? offsetParam : 0;
+
     const where: Prisma.LeadWhereInput = {
       ...(status && { status }),
       ...(source && { source }),
@@ -43,6 +56,8 @@ export async function GET(request: NextRequest) {
         _count: { select: { tasks: true, notes: true } },
       },
       orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: offset,
     });
 
     return NextResponse.json(leads);

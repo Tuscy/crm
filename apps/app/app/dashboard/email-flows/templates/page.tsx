@@ -3,8 +3,6 @@ import { Button, Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import { getEmailTemplates } from "@/lib/email-flows/templates";
 import { DeleteTemplateButton } from "@/components/email-flows/delete-template-button";
 
-export const dynamic = "force-dynamic";
-
 export default async function EmailTemplatesPage() {
   const templates = await getEmailTemplates();
 

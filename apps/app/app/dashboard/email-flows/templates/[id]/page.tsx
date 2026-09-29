@@ -2,8 +2,6 @@ import { notFound } from "next/navigation";
 import { getEmailTemplateById } from "@/lib/email-flows/templates";
 import { TemplateEditor } from "@/components/email-flows/template-editor";
 
-export const dynamic = "force-dynamic";
-
 export default async function TemplateEditorPage({
   params,
 }: {

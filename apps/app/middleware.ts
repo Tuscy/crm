@@ -25,10 +25,38 @@ function legacyCookieAllowed(): boolean {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const authSecret = process.env.AUTH_SECRET;
+
+  // Lazy + memoized: only decoded for paths that actually need it below
+  // (/api/* to decide on the rate-limit skip, /dashboard/* for the auth
+  // gate) — a JWT decode is local/cheap, but no need to pay it on every
+  // request the matcher covers (e.g. /auth/*, /client/login/*).
+  let staffTokenChecked = false;
+  let cachedIsAuthenticatedStaff = false;
+  async function isAuthenticatedStaff(): Promise<boolean> {
+    if (staffTokenChecked) return cachedIsAuthenticatedStaff;
+    staffTokenChecked = true;
+    if (!authSecret) return false;
+    const token = await getToken({
+      req: request,
+      secret: authSecret,
+      secureCookie: process.env.NODE_ENV === "production",
+    });
+    cachedIsAuthenticatedStaff = Boolean(
+      token && (token as { isStaff?: boolean }).isStaff === true
+    );
+    return cachedIsAuthenticatedStaff;
+  }
 
   if (pathname.startsWith("/api/")) {
-    const blocked = await rateLimit(request, "api");
-    if (blocked) return blocked;
+    // Internal dashboard API calls from an already-authenticated staff
+    // session don't need the same protection as public/unauthenticated
+    // traffic — skip the Redis round-trip for them; still rate-limit
+    // everything else (public webhooks, OAuth callbacks, anonymous callers).
+    if (!(await isAuthenticatedStaff())) {
+      const blocked = await rateLimit(request, "api");
+      if (blocked) return blocked;
+    }
   } else if (
     pathname.startsWith("/dashboard/staff-login") ||
     pathname.startsWith("/auth/") ||
@@ -67,21 +95,10 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  const authSecret = process.env.AUTH_SECRET;
   const legacyPassword = process.env.STAFF_DASHBOARD_PASSWORD;
 
-  if (authSecret) {
-    const token = await getToken({
-      req: request,
-      secret: authSecret,
-      secureCookie: process.env.NODE_ENV === "production",
-    });
-    const isStaff = Boolean(
-      token && (token as { isStaff?: boolean }).isStaff === true
-    );
-    if (isStaff) {
-      return NextResponse.next();
-    }
+  if (authSecret && (await isAuthenticatedStaff())) {
+    return NextResponse.next();
   }
 
   if (

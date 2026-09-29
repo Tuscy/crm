@@ -4,8 +4,6 @@ import { prisma } from "@stky/db";
 import { listPagesForSite, createPage } from "@/lib/server/actions/sites";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 
-export const dynamic = "force-dynamic";
-
 export default async function SitePagesPage({
   params,
 }: {

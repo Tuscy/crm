@@ -1,8 +1,6 @@
 import { listIntegrationKeys } from "@/lib/server/actions/integration-keys";
 import { IntegrationKeysForm } from "./integration-keys-form";
 
-export const dynamic = "force-dynamic";
-
 export default async function IntegrationApiKeysPage() {
   const keys = await listIntegrationKeys();
 
