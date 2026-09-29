@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import { getLeads } from "@/lib/server/actions/leads";
 import { prisma } from "@stky/db";
+import { UptimeStatusCard } from "@/components/dashboard/uptime-status-card";
 
 export default async function DashboardPage() {
   const [leads, leadCount, dealCount] = await Promise.all([
@@ -51,6 +52,7 @@ export default async function DashboardPage() {
             </Link>
           </CardContent>
         </Card>
+        <UptimeStatusCard />
       </div>
       <Card>
         <CardHeader>

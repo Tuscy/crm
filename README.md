@@ -90,6 +90,17 @@ If these are unset, the Automations page shows setup instructions instead of fai
 - **Rotate** `N8N_API_KEY` if it leaks; pin n8n Docker image/version and verify API compatibility after upgrades (`/api/v1/docs` on your instance).
 - **Webhooks:** inbound CRM events still use `CRM_WEBHOOK_URL` / `CRM_WEBHOOK_SECRET`; webhook workflows must stay **active** in n8n to receive events.
 
+### System status (Uptime Kuma)
+
+The **Dashboard** home shows a **System status** card with a green/red dot per monitor, a red banner across the dashboard while any monitor is down, and a red dot on the Dashboard nav item. The CRM reads Kuma's public status page JSON (`/api/status-page/<slug>` and `/api/status-page/heartbeat/<slug>`) from the server and the browser polls the staff-only `/api/uptime` route every 60 seconds.
+
+| Variable | Purpose |
+| -------- | ------- |
+| `UPTIME_KUMA_BASE_URL` | HTTPS origin of your Kuma instance (no trailing slash) |
+| `UPTIME_KUMA_STATUS_SLUG` | Slug of a **published** Kuma status page containing the monitors to show |
+
+Only monitors added to that status page appear. If these are unset, the card shows setup hints and no banner appears. "Was down" notes are limited to the recent checks Kuma returns (roughly the last 100 per monitor).
+
 ## Analytics (GA4 & Search Console)
 
 - **`AnalyticsCredential`** (canonical) stores encrypted OAuth **`refreshToken`**, property/site **`accountId`**, and optional **`clientId`** (null = org-level fallback). Connect via **`/dashboard/settings/analytics`**.

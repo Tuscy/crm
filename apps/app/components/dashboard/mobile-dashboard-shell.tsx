@@ -7,8 +7,36 @@ import { Menu } from "lucide-react";
 import { cn } from "@stky/ui/utils";
 import { AppBrand } from "@/components/app-brand";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
+import {
+  UptimeStatusProvider,
+  useUptimeStatus,
+} from "@/components/dashboard/uptime-status-provider";
+import { UptimeBanner } from "@/components/dashboard/uptime-banner";
 
-export function MobileDashboardShell({
+function MenuButtonDot() {
+  const { down } = useUptimeStatus();
+  if (down.length === 0) return null;
+  return (
+    <span
+      role="img"
+      aria-label="A monitor is down"
+      className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-muted"
+    />
+  );
+}
+
+export function MobileDashboardShell(props: {
+  signOutForm: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <UptimeStatusProvider>
+      <ShellInner {...props} />
+    </UptimeStatusProvider>
+  );
+}
+
+function ShellInner({
   signOutForm,
   children,
 }: {
@@ -45,9 +73,10 @@ export function MobileDashboardShell({
                 type="button"
                 aria-label="Open navigation"
                 aria-expanded={isOpen}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground hover:bg-accent"
+                className="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground hover:bg-accent"
               >
                 <Menu className="h-5 w-5" />
+                <MenuButtonDot />
               </button>
             </DialogPrimitive.Trigger>
             <DialogPrimitive.Portal>
@@ -80,6 +109,7 @@ export function MobileDashboardShell({
         </div>
 
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4">
+          <UptimeBanner />
           {children}
         </main>
       </div>

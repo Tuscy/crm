@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@stky/ui/utils";
+import { useUptimeStatus } from "@/components/dashboard/uptime-status-provider";
 
 type NavLink = {
   type: "link";
@@ -125,6 +126,7 @@ function defaultIsActive(pathname: string, href: string): boolean {
 
 export function DashboardNav() {
   const pathname = usePathname();
+  const { down } = useUptimeStatus();
   let headingIndex = 0;
 
   return (
@@ -154,13 +156,20 @@ export function DashboardNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "block rounded-md px-3 py-2 text-sm transition-colors",
+              "flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors",
               active
                 ? "bg-accent text-foreground"
                 : "text-muted-foreground hover:bg-accent hover:text-foreground"
             )}
           >
             {item.label}
+            {item.href === "/dashboard" && down.length > 0 ? (
+              <span
+                role="img"
+                aria-label={`${down.length} monitor${down.length === 1 ? "" : "s"} down`}
+                className="h-2.5 w-2.5 rounded-full bg-red-500"
+              />
+            ) : null}
           </Link>
         );
       })}
