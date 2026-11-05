@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@stky/db";
+import { requirePermission } from "@/lib/server/guard";
 
 async function requireStaffId(): Promise<string> {
   const session = await auth();
@@ -27,6 +28,7 @@ export async function createSiteBuild(
   clientId: string,
   input: CreateSiteBuildInput
 ) {
+  await requirePermission("siteBuild:create", { entity: "SiteBuild" });
   const createdById = await requireStaffId();
 
   if (!input.projectName?.trim()) {
@@ -72,6 +74,7 @@ export async function getSiteBuildById(id: string) {
 }
 
 export async function updateSiteBuildStage(id: string, stage: number) {
+  await requirePermission("siteBuild:update", { entity: "SiteBuild", entityId: id });
   await requireStaffId();
 
   if (stage < 0 || stage > 5) throw new Error("Stage must be 0–5");
@@ -90,6 +93,7 @@ export async function updateSiteBuildStatus(
   id: string,
   status: "DRAFT" | "IN_PROGRESS" | "COMPLETE" | "PAUSED"
 ) {
+  await requirePermission("siteBuild:update", { entity: "SiteBuild", entityId: id });
   await requireStaffId();
 
   const build = await prisma.siteBuild.update({

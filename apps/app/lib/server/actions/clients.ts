@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma, Prisma } from "@stky/db";
 import { logActivity } from "@/lib/server/activity-log";
 import { enrolMatchingFlows } from "@/lib/email-flows/trigger";
+import { requirePermission } from "@/lib/server/guard";
 
 const BILLING_PERIODS = ["monthly", "annual", "quarterly", "one-time"] as const;
 
@@ -114,6 +115,7 @@ export async function getClientById(id: string) {
 }
 
 export async function createClient(data: CreateClientInput) {
+  await requirePermission("client:create", { entity: "Client" });
   const validated = validateCreateInput(data);
   const services = data.services ?? [];
   const packageType = data.package ?? null;
@@ -149,6 +151,7 @@ export async function syncClientServices(
   clientId: string,
   types: ServiceType[]
 ) {
+  await requirePermission("client:update", { entity: "Client" });
   const existing = await prisma.clientService.findMany({ where: { clientId } });
   const nextSet = new Set(types);
 
@@ -173,6 +176,7 @@ export async function updateClientPackageAndServices(
   clientId: string,
   data: { package: PackageType | null; services: ServiceType[] }
 ) {
+  await requirePermission("client:update", { entity: "Client" });
   const existing = await prisma.client.findUnique({
     where: { id: clientId },
     include: { services: { where: { active: true } } },
@@ -211,6 +215,7 @@ export async function updateClientPackageAndServices(
 }
 
 export async function updateClient(id: string, data: UpdateClientInput) {
+  await requirePermission("client:update", { entity: "Client", entityId: id });
   const client = await prisma.client.update({
     where: { id },
     data: {

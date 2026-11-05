@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  if (!(await requireAutomationAuth(request, "PUT /api/google-ads/settings"))) {
+  if (!(await requireAutomationAuth(request, "PUT /api/google-ads/settings", undefined, "integration:update"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const body = (await request.json()) as { loginCustomerId?: string };

@@ -1,11 +1,13 @@
 "use client";
 
+import { useCan } from "@/lib/use-can";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@stky/ui";
 import { deleteLead } from "@/lib/server/actions/leads";
 
 export function DeleteLeadButton({ leadId }: { leadId: string }) {
+  const allowed = useCan("lead:delete");
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
@@ -20,6 +22,8 @@ export function DeleteLeadButton({ leadId }: { leadId: string }) {
       setPending(false);
     }
   }
+
+  if (!allowed) return null;
 
   return (
     <Button

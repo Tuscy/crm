@@ -5,6 +5,7 @@ import { prisma, Prisma } from "@stky/db";
 import type { EmailFlowTrigger } from "@stky/db";
 import { auth } from "@/auth";
 import type { FlowStep } from "./types";
+import { requirePermission } from "@/lib/server/guard";
 
 async function requireStaff() {
   const session = await auth();
@@ -36,6 +37,7 @@ export async function getEmailFlowById(id: string) {
 
 /** Creates a blank draft flow and returns it — used by the "New flow" button. */
 export async function createEmailFlow() {
+  await requirePermission("emailFlow:create", { entity: "EmailFlow" });
   await requireStaff();
   const flow = await prisma.emailFlow.create({
     data: {
@@ -62,6 +64,7 @@ export type UpdateFlowInput = {
  * never touches n8n. Activation is handled separately (see activation.ts).
  */
 export async function updateEmailFlow(id: string, input: UpdateFlowInput) {
+  await requirePermission("emailFlow:update", { entity: "EmailFlow", entityId: id });
   await requireStaff();
 
   const data: Prisma.EmailFlowUpdateInput = {};
@@ -94,6 +97,7 @@ export async function updateEmailFlow(id: string, input: UpdateFlowInput) {
 }
 
 export async function deleteEmailFlow(id: string) {
+  await requirePermission("emailFlow:delete", { entity: "EmailFlow", entityId: id });
   await requireStaff();
 
   const flow = await prisma.emailFlow.findUnique({ where: { id } });

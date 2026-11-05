@@ -1,5 +1,6 @@
 "use client";
 
+import { useCan } from "@/lib/use-can";
 import type { Section } from "@stky/db";
 import { Button } from "@stky/ui";
 import {
@@ -16,6 +17,7 @@ export function SectionEditor({
   sections: Section[];
   pageId: string;
 }) {
+  const canDelete = useCan("site:delete");
   return (
     <div className="space-y-6">
       <form action={addSectionFromForm} className="flex flex-wrap items-end gap-2 rounded-lg border p-4">
@@ -44,12 +46,14 @@ export function SectionEditor({
               <span className="font-mono">{s.type}</span>
               <span className="ml-2 text-muted-foreground">order {s.order}</span>
             </div>
-            <form action={deleteSectionFromForm}>
-              <input type="hidden" name="sectionId" value={s.id} />
-              <Button type="submit" variant="destructive" size="sm">
-                Delete
-              </Button>
-            </form>
+            {canDelete && (
+              <form action={deleteSectionFromForm}>
+                <input type="hidden" name="sectionId" value={s.id} />
+                <Button type="submit" variant="destructive" size="sm">
+                  Delete
+                </Button>
+              </form>
+            )}
           </div>
           <form action={saveSectionFromForm} className="space-y-2">
             <input type="hidden" name="sectionId" value={s.id} />

@@ -4,6 +4,7 @@ import { prisma } from "@stky/db";
 import { generateIntegrationApiKey, hashApiKey } from "@stky/security";
 import { requireStaffSession } from "@/lib/auth";
 import { logStky } from "@/lib/observability";
+import { requirePermission } from "@/lib/server/guard";
 
 export type IntegrationKeyRow = {
   id: string;
@@ -16,7 +17,7 @@ export type IntegrationKeyRow = {
 };
 
 export async function listIntegrationKeys(): Promise<IntegrationKeyRow[]> {
-  await requireStaffSession();
+  await requirePermission("integration:read", { entity: "IntegrationApiKey" });
   return prisma.integrationApiKey.findMany({
     orderBy: { createdAt: "desc" },
     select: {
@@ -36,6 +37,7 @@ export async function createIntegrationKey(
   name: string | null,
   scopes: string[] | null
 ): Promise<{ plainKey: string; keyPrefix: string }> {
+  await requirePermission("integration:create", { entity: "IntegrationApiKey" });
   await requireStaffSession();
   const { plainKey, keyPrefix } = generateIntegrationApiKey();
   const keyHash = hashApiKey(plainKey);
@@ -56,6 +58,7 @@ export async function createIntegrationKey(
 }
 
 export async function revokeIntegrationKey(id: string): Promise<void> {
+  await requirePermission("integration:delete", { entity: "IntegrationApiKey", entityId: id });
   await requireStaffSession();
   await prisma.integrationApiKey.update({
     where: { id },

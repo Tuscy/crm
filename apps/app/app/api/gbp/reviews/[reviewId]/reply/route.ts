@@ -5,6 +5,7 @@
  * Write operations — staff session only, no API key fallback.
  */
 
+import { denyUnlessCan } from "@/lib/server/guard";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { resolveGBPCredential } from "@/lib/gbp/resolver";
@@ -20,6 +21,8 @@ export async function POST(
   if (!session?.user?.isStaff) {
     return NextResponse.json({ error: "Staff session required" }, { status: 401 });
   }
+  const denied = await denyUnlessCan("gbp:create", { entity: "GBPReviewReply" });
+  if (denied) return denied;
 
   let body: { clientId?: string | null; comment?: string };
   try {
@@ -66,6 +69,8 @@ export async function DELETE(
   if (!session?.user?.isStaff) {
     return NextResponse.json({ error: "Staff session required" }, { status: 401 });
   }
+  const denied = await denyUnlessCan("gbp:delete", { entity: "GBPReviewReply" });
+  if (denied) return denied;
 
   const { searchParams } = new URL(request.url);
   const clientId = searchParams.get("clientId") || null;

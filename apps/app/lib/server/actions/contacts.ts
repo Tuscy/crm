@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@stky/db";
+import { requirePermission } from "@/lib/server/guard";
 
 export type ContactInput = {
   name: string;
@@ -27,6 +28,7 @@ export type ContactRow = {
 };
 
 export async function createContact(data: ContactInput) {
+  await requirePermission("contact:create", { entity: "Contact" });
   const contact = await prisma.contact.create({
     data: {
       name: data.name,
@@ -43,6 +45,7 @@ export async function createContact(data: ContactInput) {
 }
 
 export async function updateContact(id: string, data: ContactInput) {
+  await requirePermission("contact:update", { entity: "Contact", entityId: id });
   const contact = await prisma.contact.update({
     where: { id },
     data: {
@@ -60,6 +63,7 @@ export async function updateContact(id: string, data: ContactInput) {
 }
 
 export async function deleteContact(id: string) {
+  await requirePermission("contact:delete", { entity: "Contact", entityId: id });
   const contact = await prisma.contact.delete({ where: { id } });
   revalidatePath("/dashboard/contacts");
   return contact;

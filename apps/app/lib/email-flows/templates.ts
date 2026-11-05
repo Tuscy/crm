@@ -5,6 +5,7 @@ import { prisma } from "@stky/db";
 import { auth } from "@/auth";
 import { detectVariables } from "./template-utils";
 import { collectTemplateIds, parseSteps } from "./types";
+import { requirePermission } from "@/lib/server/guard";
 
 async function requireStaff() {
   const session = await auth();
@@ -34,6 +35,7 @@ export async function getEmailTemplateById(id: string) {
 }
 
 export async function createEmailTemplate(input: SaveTemplateInput) {
+  await requirePermission("emailTemplate:create", { entity: "EmailFlowTemplate" });
   await requireStaff();
   const name = input.name?.trim();
   const subject = input.subject?.trim();
@@ -57,6 +59,7 @@ export async function createEmailTemplate(input: SaveTemplateInput) {
 }
 
 export async function updateEmailTemplate(id: string, input: SaveTemplateInput) {
+  await requirePermission("emailTemplate:update", { entity: "EmailFlowTemplate", entityId: id });
   await requireStaff();
   const name = input.name?.trim();
   const subject = input.subject?.trim();
@@ -86,6 +89,7 @@ export async function updateEmailTemplate(id: string, input: SaveTemplateInput) 
  * steps JSON. Returns the names of blocking flows so the UI can explain.
  */
 export async function deleteEmailTemplate(id: string) {
+  await requirePermission("emailTemplate:delete", { entity: "EmailFlowTemplate", entityId: id });
   await requireStaff();
 
   const activeFlows = await prisma.emailFlow.findMany({

@@ -10,11 +10,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   if (
-    !(await requireAutomationAuth(
-      request,
-      "PUT /api/deals/[id]",
-      ApiScope.DEALS_WRITE
-    ))
+    !(await requireAutomationAuth(request, "PUT /api/deals/[id]", ApiScope.DEALS_WRITE, "deal:update"))
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

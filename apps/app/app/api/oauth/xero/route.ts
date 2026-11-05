@@ -10,6 +10,7 @@
  * into a staff session to connect someone else's organisation.
  */
 
+import { denyUnlessCan } from "@/lib/server/guard";
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
@@ -26,6 +27,8 @@ export async function GET() {
   if (!session?.user?.isStaff) {
     return NextResponse.json({ error: "Staff session required" }, { status: 401 });
   }
+  const denied = await denyUnlessCan("integration:update", { entity: "XeroCredential" });
+  if (denied) return denied;
 
   if (!xeroOAuthConfigured()) {
     return NextResponse.json(

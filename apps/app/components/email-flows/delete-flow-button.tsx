@@ -1,5 +1,6 @@
 "use client";
 
+import { useCan } from "@/lib/use-can";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -7,6 +8,7 @@ import { Button } from "@stky/ui";
 import { deleteEmailFlow } from "@/lib/email-flows/flows";
 
 export function DeleteFlowButton({ id, name }: { id: string; name: string }) {
+  const allowed = useCan("emailFlow:delete");
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [deleted, setDeleted] = useState(false);
@@ -34,6 +36,8 @@ export function DeleteFlowButton({ id, name }: { id: string; name: string }) {
   }
 
   if (deleted) return null;
+
+  if (!allowed) return null;
 
   return (
     <Button

@@ -19,12 +19,16 @@ model User {
   image           String?
   passwordHash    String?
   isStaff         Boolean       @default(false)
+  // Staff permission tier: ADMIN | EDITOR | VIEWER (see apps/app/lib/permissions.ts).
+  // Only meaningful when isStaff is true.
+  staffRole       String        @default("ADMIN")
   createdAt       DateTime      @default(now())
   accounts        Account[]
   sessions        Session[]
   memberships     Membership[]
   assignedTasks   Task[]        @relation("TaskAssignee")
   activityLogs    ActivityLog[]
+  auditLogs       AuditLog[]
   createdInvoices Invoice[]
   siteBuilds      SiteBuild[]
 }
@@ -567,4 +571,25 @@ model EmailFlowTemplate {
   variables String[] // declared variables e.g. ["name", "company", "package"]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// General audit trail: who did what to which record, and when. Written by
+// apps/app/lib/server/audit.ts for every mutation (and denied attempts).
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String?
+  actor       User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail  String?
+  actorRole   String?
+  action      String   // e.g. "lead.delete", "user.create", "auth.denied"
+  entity      String?  // e.g. "Lead"
+  entityId    String?
+  outcome     String   @default("ALLOWED") // ALLOWED | DENIED
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([entity, entityId])
+  @@index([action])
 }

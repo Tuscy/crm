@@ -12,6 +12,7 @@
  *   clientId    (optional) CRM client ID; omit for org-level credential
  */
 
+import { denyUnlessCan } from "@/lib/server/guard";
 import { NextRequest, NextResponse } from "next/server";
 import { OAuth2Client } from "google-auth-library";
 import { auth } from "@/auth";
@@ -29,6 +30,8 @@ export async function GET(request: NextRequest) {
   if (!session?.user?.isStaff) {
     return NextResponse.json({ error: "Staff session required" }, { status: 401 });
   }
+  const denied = await denyUnlessCan("integration:update", { entity: "GoogleCredential" });
+  if (denied) return denied;
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type");

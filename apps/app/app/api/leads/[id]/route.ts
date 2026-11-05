@@ -48,11 +48,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   if (
-    !(await requireAutomationAuth(
-      request,
-      "PUT /api/leads/[id]",
-      ApiScope.LEADS_WRITE
-    ))
+    !(await requireAutomationAuth(request, "PUT /api/leads/[id]", ApiScope.LEADS_WRITE, "lead:update"))
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -98,11 +94,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   if (
-    !(await requireAutomationAuth(
-      request,
-      "DELETE /api/leads/[id]",
-      ApiScope.LEADS_WRITE
-    ))
+    !(await requireAutomationAuth(request, "DELETE /api/leads/[id]", ApiScope.LEADS_DELETE, "lead:delete"))
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

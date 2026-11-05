@@ -23,12 +23,14 @@ function SubmitCreate() {
 const SCOPE_OPTIONS: { value: string; label: string }[] = [
   { value: "*", label: "Full access (*)" },
   { value: "leads:read", label: "leads:read" },
-  { value: "leads:write", label: "leads:write" },
+  { value: "leads:write", label: "leads:write (create/update)" },
+  { value: "leads:delete", label: "leads:delete" },
   { value: "deals:write", label: "deals:write" },
   { value: "analytics:read", label: "analytics:read" },
   { value: "google-ads:read", label: "google-ads:read" },
   { value: "tasks:read", label: "tasks:read" },
-  { value: "tasks:write", label: "tasks:write" },
+  { value: "tasks:write", label: "tasks:write (create/update)" },
+  { value: "tasks:delete", label: "tasks:delete" },
 ];
 
 export function IntegrationKeysForm({

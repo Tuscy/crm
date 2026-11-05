@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@stky/db";
 import { encrypt } from "@/lib/server/encrypt";
+import { requirePermission } from "@/lib/server/guard";
 
 async function requireStaff() {
   const session = await auth();
@@ -46,6 +47,7 @@ export async function saveAnalyticsCredential(input: {
   accountId: string;
   refreshToken: string; // plain — encrypted here before storage
 }) {
+  await requirePermission("integration:update", { entity: "AnalyticsCredential" });
   await requireStaff();
   const clientId = input.clientId?.trim() || null;
   const accountId = input.accountId.trim();
@@ -79,6 +81,7 @@ export async function saveAnalyticsCredential(input: {
 }
 
 export async function deleteAnalyticsCredential(id: string) {
+  await requirePermission("integration:delete", { entity: "AnalyticsCredential", entityId: id });
   await requireStaff();
   await prisma.analyticsCredential.delete({ where: { id } });
   revalidatePath("/dashboard/settings/analytics");

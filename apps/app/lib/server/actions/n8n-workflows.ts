@@ -8,6 +8,7 @@ import {
   setN8nWorkflowActive,
   type N8nWorkflowSummary,
 } from "@/lib/n8n/client";
+import { requirePermission } from "@/lib/server/guard";
 
 export async function getAutomationsWorkflows(): Promise<{
   configured: boolean;
@@ -34,6 +35,7 @@ export async function toggleN8nWorkflowActive(
   workflowId: string,
   active: boolean
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requirePermission("emailFlow:update", { entity: "N8nWorkflow" });
   try {
     await requireStaffSession();
     if (!n8nConfigured()) {

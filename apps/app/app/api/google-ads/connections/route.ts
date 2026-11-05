@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!(await requireAutomationAuth(request, "POST /api/google-ads/connections"))) {
+  if (!(await requireAutomationAuth(request, "POST /api/google-ads/connections", undefined, "integration:update"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const body = (await request.json()) as {
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   if (
-    !(await requireAutomationAuth(request, "DELETE /api/google-ads/connections"))
+    !(await requireAutomationAuth(request, "DELETE /api/google-ads/connections", undefined, "integration:delete"))
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

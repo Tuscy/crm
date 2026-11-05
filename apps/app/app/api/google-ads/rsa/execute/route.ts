@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { denyUnlessCan } from "@/lib/server/guard";
 import { auth } from "@/auth";
 import { normalizeCustomerId } from "@/lib/google-ads/format";
 import { callPythonBridge } from "@/lib/google-ads/python-bridge";
@@ -26,6 +27,8 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     );
   }
+  const denied = await denyUnlessCan("integration:update", { entity: "GoogleAdsRsa" });
+  if (denied) return denied;
 
   let body: RsaUpdateBody;
   try {

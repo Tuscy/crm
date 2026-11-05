@@ -32,6 +32,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.name ?? undefined,
           isStaff: user.isStaff,
+          staffRole: user.staffRole,
         };
       },
     }),
@@ -41,6 +42,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.sub = user.id;
         token.isStaff = (user as { isStaff?: boolean }).isStaff;
+        token.staffRole = (user as { staffRole?: string }).staffRole;
       }
       return token;
     },
@@ -48,6 +50,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.sub as string;
         session.user.isStaff = Boolean(token.isStaff);
+        session.user.staffRole = token.staffRole;
       }
       return session;
     },

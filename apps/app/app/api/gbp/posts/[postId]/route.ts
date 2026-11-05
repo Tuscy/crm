@@ -6,6 +6,7 @@
  * Staff only — no API key fallback.
  */
 
+import { denyUnlessCan } from "@/lib/server/guard";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@stky/db";
@@ -22,6 +23,8 @@ export async function DELETE(
   if (!session?.user?.isStaff) {
     return NextResponse.json({ error: "Staff session required" }, { status: 401 });
   }
+  const denied = await denyUnlessCan("gbp:delete", { entity: "GBPPost" });
+  if (denied) return denied;
 
   const row = await prisma.gBPPost.findUnique({ where: { id: params.postId } });
   if (!row) {
