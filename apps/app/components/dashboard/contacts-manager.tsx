@@ -1,5 +1,6 @@
 "use client";
 
+import { useCan } from "@/lib/use-can";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -195,6 +196,7 @@ export function ContactsManager({ rows }: { rows: ContactRow[] }) {
     return localRows.filter((row) => row.name.toLowerCase().includes(q));
   }, [localRows, search]);
 
+  const canDelete = useCan("contact:delete");
   async function handleDelete(id: string) {
     if (!confirm("Delete this contact?")) return;
     const previous = localRows;
@@ -300,14 +302,16 @@ export function ContactsManager({ rows }: { rows: ContactRow[] }) {
                             >
                               Edit
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={pendingDeleteId === row.id}
-                              onClick={() => handleDelete(row.id)}
-                            >
-                              {pendingDeleteId === row.id ? "Deleting…" : "Delete"}
-                            </Button>
+                            {canDelete && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={pendingDeleteId === row.id}
+                                onClick={() => handleDelete(row.id)}
+                              >
+                                {pendingDeleteId === row.id ? "Deleting…" : "Delete"}
+                              </Button>
+                            )}
                           </div>
                         ) : (
                           <Button asChild variant="ghost" size="sm">

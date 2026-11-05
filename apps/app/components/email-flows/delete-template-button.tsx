@@ -1,5 +1,6 @@
 "use client";
 
+import { useCan } from "@/lib/use-can";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -13,6 +14,7 @@ export function DeleteTemplateButton({
   id: string;
   name: string;
 }) {
+  const allowed = useCan("emailTemplate:delete");
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [deleted, setDeleted] = useState(false);
@@ -40,6 +42,8 @@ export function DeleteTemplateButton({
   }
 
   if (deleted) return null;
+
+  if (!allowed) return null;
 
   return (
     <Button

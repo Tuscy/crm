@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@stky/db";
 import type { PackageType } from "@stky/db";
+import { requirePermission } from "@/lib/server/guard";
 
 export type LeadConversionInput = {
   package?: PackageType | null;
@@ -20,6 +21,7 @@ export async function upsertLeadConversion(
   leadId: string,
   data: LeadConversionInput
 ) {
+  await requirePermission("lead:update", { entity: "Lead" });
   const conversion = await prisma.leadConversion.upsert({
     where: { leadId },
     create: {

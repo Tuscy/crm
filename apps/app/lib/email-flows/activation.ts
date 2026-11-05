@@ -13,6 +13,7 @@ import {
 import { parseSteps } from "./types";
 import { renderTemplate } from "./template-utils";
 import { sendFlowEmail } from "./send";
+import { requirePermission } from "@/lib/server/guard";
 
 async function requireStaff() {
   const session = await auth();
@@ -37,6 +38,7 @@ function revalidateFlow(id: string) {
  *    failed n8n call never leaves a half-activated record.
  */
 export async function activateEmailFlow(flowId: string) {
+  await requirePermission("emailFlow:update", { entity: "EmailFlow", entityId: flowId });
   await requireStaff();
 
   const flow = await prisma.emailFlow.findUnique({ where: { id: flowId } });
@@ -80,6 +82,7 @@ export async function activateEmailFlow(flowId: string) {
 }
 
 export async function pauseEmailFlow(flowId: string) {
+  await requirePermission("emailFlow:update", { entity: "EmailFlow", entityId: flowId });
   await requireStaff();
 
   const flow = await prisma.emailFlow.findUnique({ where: { id: flowId } });
@@ -103,6 +106,7 @@ export async function pauseEmailFlow(flowId: string) {
  * address, with declared variables filled with visible placeholders.
  */
 export async function testEmailFlow(flowId: string) {
+  await requirePermission("emailFlow:update", { entity: "EmailFlow", entityId: flowId });
   const session = await requireStaff();
   const to = session.user?.email;
   if (!to) throw new Error("Your account has no email address to test with");

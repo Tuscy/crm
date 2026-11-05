@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@stky/db";
 import { auth } from "@/auth";
+import { requirePermission } from "@/lib/server/guard";
 
 async function requireStaff() {
   const session = await auth();
@@ -35,6 +36,7 @@ export async function getFlowWithEnrollments(flowId: string) {
  * contact still moving through the same flow.
  */
 export async function cancelEnrollment(enrollmentId: string) {
+  await requirePermission("emailFlow:update", { entity: "EmailFlowEnrollment", entityId: enrollmentId });
   await requireStaff();
 
   const enrollment = await prisma.emailFlowEnrollment.findUnique({

@@ -5,6 +5,9 @@ import { prisma } from "@stky/db";
 import { logStky } from "@/lib/observability";
 import { hashApiKey } from "@stky/security";
 import { scopeAllows, type ApiScopeName } from "@/lib/api-scopes";
+import { can, type Permission } from "@/lib/permissions";
+import { audit } from "@/lib/server/audit";
+import { getStaffUser, toActor } from "@/lib/server/guard";
 
 function extractToken(request: NextRequest): string | null {
   const authHeader = request.headers.get("authorization");
@@ -27,7 +30,9 @@ function timingSafeEqualStr(a: string, b: string): boolean {
 export async function requireAutomationAuth(
   request: NextRequest,
   context: string,
-  requiredScope?: ApiScopeName
+  requiredScope?: ApiScopeName,
+  /** Staff-session callers must also hold this permission. Integration keys are governed by scopes instead. */
+  permission?: Permission
 ): Promise<boolean> {
   const token = extractToken(request);
   const legacyEnvKey = process.env.CRM_API_KEY;
@@ -62,7 +67,22 @@ export async function requireAutomationAuth(
 
   const session = await auth();
   if (session?.user?.isStaff) {
-    return true;
+    if (!permission) return true;
+    const staff = await getStaffUser();
+    if (staff && can(staff.role, permission)) {
+      if (!permission.endsWith(":read")) {
+        await audit({ actor: toActor(staff), action: permission, metadata: { context } });
+      }
+      return true;
+    }
+    await audit({
+      actor: toActor(staff),
+      action: permission,
+      outcome: "DENIED",
+      metadata: { context },
+    });
+    logStky("api_forbidden", { context, reason: "permission", permission });
+    return false;
   }
 
   logStky("api_unauthorized", { context });

@@ -48,11 +48,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   if (
-    !(await requireAutomationAuth(
-      request,
-      "POST /api/tasks",
-      ApiScope.TASKS_WRITE
-    ))
+    !(await requireAutomationAuth(request, "POST /api/tasks", ApiScope.TASKS_WRITE, "task:create"))
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

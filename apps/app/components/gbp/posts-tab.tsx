@@ -1,5 +1,6 @@
 "use client";
 
+import { useCan } from "@/lib/use-can";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, CardContent } from "@stky/ui";
@@ -388,6 +389,7 @@ export function PostsTab({
     void load();
   }, [load]);
 
+  const canDelete = useCan("gbp:delete");
   async function handleDelete(post: PostRow) {
     if (
       !window.confirm(
@@ -494,7 +496,7 @@ export function PostsTab({
                     </a>
                   )}
                 </div>
-                {post.state !== "DELETED" && (
+                {canDelete && post.state !== "DELETED" && (
                   <Button
                     size="sm"
                     variant="outline"

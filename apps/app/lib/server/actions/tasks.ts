@@ -4,11 +4,13 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@stky/db";
 import { auth } from "@/auth";
 import { enrolMatchingFlows } from "@/lib/email-flows/trigger";
+import { requirePermission } from "@/lib/server/guard";
 
 export async function createTask(
   title: string,
   opts?: { leadId?: string; dueDate?: Date; assigneeId?: string }
 ) {
+  await requirePermission("task:create", { entity: "Task" });
   let assigneeId = opts?.assigneeId || null;
   if (!opts?.leadId && !assigneeId) {
     const session = await auth();
@@ -31,6 +33,7 @@ export async function createTask(
 }
 
 export async function toggleTaskCompleted(taskId: string) {
+  await requirePermission("task:update", { entity: "Task", entityId: taskId });
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) throw new Error("Task not found");
   const updated = await prisma.task.update({
@@ -49,6 +52,7 @@ export async function toggleTaskCompleted(taskId: string) {
 }
 
 export async function deleteTask(taskId: string) {
+  await requirePermission("task:delete", { entity: "Task", entityId: taskId });
   const task = await prisma.task.delete({ where: { id: taskId } });
   revalidatePath("/dashboard/tasks");
   if (task.leadId) {

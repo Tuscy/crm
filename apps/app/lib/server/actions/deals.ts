@@ -8,6 +8,7 @@ import {
   notifyDealUpdated,
 } from "@/lib/crm/webhook-events";
 import { enrolMatchingFlows } from "@/lib/email-flows/trigger";
+import { requirePermission } from "@/lib/server/guard";
 
 export async function getDealsByStage() {
   const deals = await prisma.deal.findMany({
@@ -18,6 +19,7 @@ export async function getDealsByStage() {
 }
 
 export async function updateDealStage(dealId: string, stage: string) {
+  await requirePermission("deal:update", { entity: "Deal", entityId: dealId });
   if (!isValidDealStage(stage)) {
     throw new Error("Invalid deal stage");
   }
@@ -56,6 +58,7 @@ export async function createDeal(
     packageType?: "VOLTAGE" | "CHARGE" | "GRID";
   }
 ) {
+  await requirePermission("deal:create", { entity: "Deal" });
   if (!isValidDealStage(stage)) {
     throw new Error("Invalid deal stage");
   }

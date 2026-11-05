@@ -3,6 +3,7 @@
  * POST /api/gbp/posts             — create a post via the GBP API (staff only)
  */
 
+import { denyUnlessCan } from "@/lib/server/guard";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@stky/db";
@@ -57,6 +58,8 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.isStaff) {
     return NextResponse.json({ error: "Staff session required" }, { status: 401 });
   }
+  const denied = await denyUnlessCan("gbp:create", { entity: "GBPPost" });
+  if (denied) return denied;
 
   let body: CreatePostInput & { clientId?: string };
   try {

@@ -7,6 +7,7 @@ import { normalizeCustomerId } from "@/lib/google-ads/format";
 import { fetchAccountDisplayName } from "@/lib/google-ads/dashboard";
 import { clearDashboardCache } from "@/lib/google-ads/cache";
 import type { GoogleAdsConnectionDto } from "@/lib/google-ads/types";
+import { requirePermission } from "@/lib/server/guard";
 
 async function requireStaff() {
   const session = await auth();
@@ -25,6 +26,7 @@ export async function getGoogleAdsSettings() {
 }
 
 export async function saveGoogleAdsSettings(loginCustomerId: string) {
+  await requirePermission("integration:update", { entity: "GoogleAdsSettings" });
   await requireStaff();
   const normalized = normalizeCustomerId(loginCustomerId);
   if (normalized.length < 10) {
@@ -63,6 +65,7 @@ export async function upsertGoogleAdsConnection(input: {
   clientId?: string | null;
   label?: string | null;
 }) {
+  await requirePermission("integration:update", { entity: "GoogleAdsConnection" });
   await requireStaff();
   const googleAdsCustomerId = normalizeCustomerId(input.googleAdsCustomerId);
   if (googleAdsCustomerId.length < 10) {
@@ -91,6 +94,7 @@ export async function upsertGoogleAdsConnection(input: {
 }
 
 export async function deleteGoogleAdsConnection(id: string) {
+  await requirePermission("integration:delete", { entity: "GoogleAdsConnection", entityId: id });
   await requireStaff();
   const row = await prisma.googleAdsConnection.delete({ where: { id } });
   clearDashboardCache(row.googleAdsCustomerId);
@@ -99,6 +103,7 @@ export async function deleteGoogleAdsConnection(id: string) {
 }
 
 export async function syncConnectionDisplayNames() {
+  await requirePermission("integration:update", { entity: "GoogleAdsConnection" });
   await requireStaff();
   const rows = await prisma.googleAdsConnection.findMany();
   for (const row of rows) {

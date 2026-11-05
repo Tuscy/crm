@@ -47,11 +47,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   if (
-    !(await requireAutomationAuth(
-      request,
-      "PATCH /api/tasks/[id]",
-      ApiScope.TASKS_WRITE
-    ))
+    !(await requireAutomationAuth(request, "PATCH /api/tasks/[id]", ApiScope.TASKS_WRITE, "task:update"))
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -112,11 +108,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   if (
-    !(await requireAutomationAuth(
-      request,
-      "DELETE /api/tasks/[id]",
-      ApiScope.TASKS_WRITE
-    ))
+    !(await requireAutomationAuth(request, "DELETE /api/tasks/[id]", ApiScope.TASKS_DELETE, "task:delete"))
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

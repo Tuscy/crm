@@ -1,5 +1,6 @@
 "use client";
 
+import { useCan } from "@/lib/use-can";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card, CardContent } from "@stky/ui";
@@ -81,6 +82,7 @@ function ReviewCard({
     }
   }
 
+  const canDelete = useCan("gbp:delete");
   async function deleteReply() {
     if (!window.confirm("Delete this reply? It will be removed from Google.")) {
       return;
@@ -154,9 +156,11 @@ function ReviewCard({
               >
                 Edit
               </Button>
-              <Button size="sm" variant="outline" disabled={busy} onClick={() => void deleteReply()}>
-                Delete
-              </Button>
+              {canDelete && (
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => void deleteReply()}>
+                  Delete
+                </Button>
+              )}
             </div>
           </div>
         ) : (

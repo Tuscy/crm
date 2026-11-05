@@ -1,5 +1,6 @@
 "use client";
 
+import { useCan } from "@/lib/use-can";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -72,6 +73,7 @@ export function PersonalTaskList({ tasks }: { tasks: PersonalTask[] }) {
     }
   }
 
+  const canDelete = useCan("task:delete");
   async function handleDelete(taskId: string) {
     if (!confirm("Delete this task?")) return;
     setError(null);
@@ -168,15 +170,17 @@ export function PersonalTaskList({ tasks }: { tasks: PersonalTask[] }) {
                       ) : null}
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={pendingIds.has(task.id)}
-                    onClick={() => handleDelete(task.id)}
-                  >
-                    Delete
-                  </Button>
+                  {canDelete && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={pendingIds.has(task.id)}
+                      onClick={() => handleDelete(task.id)}
+                    >
+                      Delete
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>

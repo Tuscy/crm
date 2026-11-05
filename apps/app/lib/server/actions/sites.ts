@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma, type Prisma } from "@stky/db";
 import { defaultContentForType, sectionTypeKeys, type SectionTypeKey } from "@stky/sites";
+import { requirePermission } from "@/lib/server/guard";
 
 export async function listSites() {
   return prisma.site.findMany({
@@ -15,6 +16,7 @@ export async function listSites() {
 }
 
 export async function createSite(formData: FormData) {
+  await requirePermission("site:create", { entity: "Site" });
   const clientId = formData.get("clientId") as string;
   const slug = ((formData.get("slug") as string) || "").trim() || null;
   const subdomain = ((formData.get("subdomain") as string) || "").trim() || null;
@@ -44,6 +46,7 @@ export async function listPagesForSite(siteId: string) {
 }
 
 export async function createPage(siteId: string, formData: FormData) {
+  await requirePermission("site:create", { entity: "Page", entityId: siteId });
   const raw = ((formData.get("slug") as string) ?? "").trim();
   const slug = raw === "" ? "" : raw.replace(/^\/+/, "").replace(/\/+$/, "");
 
@@ -69,6 +72,7 @@ export async function getPageEditorBundle(pageId: string) {
 }
 
 export async function togglePagePublished(pageId: string, published: boolean) {
+  await requirePermission("site:update", { entity: "Page", entityId: pageId });
   const page = await prisma.page.update({
     where: { id: pageId },
     data: { published },
@@ -79,6 +83,7 @@ export async function togglePagePublished(pageId: string, published: boolean) {
 }
 
 export async function updateSectionJson(sectionId: string, rawJson: string) {
+  await requirePermission("site:update", { entity: "Section", entityId: sectionId });
   let parsed: unknown;
   try {
     parsed = JSON.parse(rawJson);
@@ -94,6 +99,7 @@ export async function updateSectionJson(sectionId: string, rawJson: string) {
 }
 
 export async function createSectionAction(pageId: string, type: string) {
+  await requirePermission("site:create", { entity: "Section", entityId: pageId });
   const t = type.toLowerCase() as SectionTypeKey;
   if (!sectionTypeKeys.includes(t)) {
     throw new Error("Invalid section type");
@@ -117,6 +123,7 @@ export async function createSectionAction(pageId: string, type: string) {
 }
 
 export async function deleteSectionAction(sectionId: string) {
+  await requirePermission("site:delete", { entity: "Section", entityId: sectionId });
   const section = await prisma.section.delete({
     where: { id: sectionId },
     select: { pageId: true, page: { select: { siteId: true } } },
@@ -142,6 +149,7 @@ export async function addSectionFromForm(formData: FormData) {
 }
 
 export async function reorderSectionsAction(pageId: string, orderedIds: string[]) {
+  await requirePermission("site:update", { entity: "Page", entityId: pageId });
   const page = await prisma.page.findUnique({
     where: { id: pageId },
     select: { siteId: true },

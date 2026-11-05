@@ -6,6 +6,7 @@ import type { Prisma } from "@stky/db";
 import { isValidLeadStatus } from "@stky/crm";
 import { notifyLeadCreated } from "@/lib/crm/webhook-events";
 import { enrolMatchingFlows } from "@/lib/email-flows/trigger";
+import { requirePermission } from "@/lib/server/guard";
 
 export type CreateLeadInput = {
   name: string;
@@ -28,6 +29,7 @@ export type UpdateLeadInput = {
 };
 
 export async function createLead(data: CreateLeadInput) {
+  await requirePermission("lead:create", { entity: "Lead" });
   const status = data.status ?? "NEW";
   if (!isValidLeadStatus(status)) {
     throw new Error("Invalid lead status");
@@ -94,6 +96,7 @@ export async function getLeadById(id: string) {
 }
 
 export async function updateLead(id: string, data: UpdateLeadInput) {
+  await requirePermission("lead:update", { entity: "Lead", entityId: id });
   if (data.status !== undefined && !isValidLeadStatus(data.status)) {
     throw new Error("Invalid lead status");
   }
@@ -136,6 +139,7 @@ export async function updateLead(id: string, data: UpdateLeadInput) {
 }
 
 export async function deleteLead(id: string) {
+  await requirePermission("lead:delete", { entity: "Lead", entityId: id });
   await prisma.lead.delete({ where: { id } });
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/leads");

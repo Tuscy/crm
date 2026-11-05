@@ -7,11 +7,7 @@ import { notifyDealCreated } from "@/lib/crm/webhook-events";
 
 export async function POST(request: NextRequest) {
   if (
-    !(await requireAutomationAuth(
-      request,
-      "POST /api/deals",
-      ApiScope.DEALS_WRITE
-    ))
+    !(await requireAutomationAuth(request, "POST /api/deals", ApiScope.DEALS_WRITE, "deal:create"))
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

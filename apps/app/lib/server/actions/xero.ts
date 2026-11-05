@@ -16,6 +16,7 @@ import {
   type XeroContact,
   type XeroInvoice,
 } from "@/lib/xero/client";
+import { requirePermission } from "@/lib/server/guard";
 
 async function requireStaff() {
   const session = await auth();
@@ -48,6 +49,7 @@ export async function listXeroContacts(): Promise<XeroContact[]> {
 }
 
 export async function setClientXeroContact(clientId: string, xeroContactId: string | null) {
+  await requirePermission("integration:update", { entity: "Client", entityId: clientId });
   await requireStaff();
   await prisma.client.update({
     where: { id: clientId },
@@ -85,6 +87,7 @@ export async function getInvoicesForClient(clientId: string): Promise<ClientInvo
 
 /** Removes the connection in Xero (best effort) and locally. Mappings are kept. */
 export async function disconnectXero() {
+  await requirePermission("integration:delete", { entity: "XeroCredential" });
   await requireStaff();
   try {
     const access = await getXeroAccess();

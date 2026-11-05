@@ -1,11 +1,13 @@
 "use client";
 
+import { useCan } from "@/lib/use-can";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@stky/ui";
 import { deleteTask } from "@/lib/server/actions/tasks";
 
 export function DeleteTaskButton({ taskId }: { taskId: string }) {
+  const allowed = useCan("task:delete");
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [deleted, setDeleted] = useState(false);
@@ -26,6 +28,8 @@ export function DeleteTaskButton({ taskId }: { taskId: string }) {
   }
 
   if (deleted) return null;
+
+  if (!allowed) return null;
 
   return (
     <Button
