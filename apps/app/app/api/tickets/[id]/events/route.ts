@@ -5,10 +5,11 @@ import { ApiScope } from "@/lib/api-scopes";
 import { appendEvent } from "@/lib/tickets/events";
 import { actorFor, errorResponse, mayTouch, readJson, str, unauthorized } from "@/lib/tickets/api";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 /** Agents append activity here. Kinds are forced under "agent." so the log can't be made to look like system events. */
 export async function POST(request: NextRequest, { params }: Ctx) {
+  const { id } = await params;
   const caller = await requireTicketAuth(
     request,
     "POST /api/tickets/:id/events",
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest, { params }: Ctx) {
 
   try {
     const ticket = await prisma.ticket.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       select: { id: true, assigneeType: true, assigneeId: true },
     });
     if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404 });

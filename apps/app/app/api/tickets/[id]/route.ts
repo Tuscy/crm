@@ -16,9 +16,10 @@ import {
   unauthorized,
 } from "@/lib/tickets/api";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, { params }: Ctx) {
+  const { id } = await params;
   const caller = await requireTicketAuth(
     request,
     "GET /api/tickets/:id",
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest, { params }: Ctx) {
 
   try {
     const ticket = await prisma.ticket.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: { client: { select: { id: true, name: true } } },
     });
     if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
@@ -57,6 +58,7 @@ export async function GET(request: NextRequest, { params }: Ctx) {
 }
 
 export async function PATCH(request: NextRequest, { params }: Ctx) {
+  const { id } = await params;
   const caller = await requireTicketAuth(
     request,
     "PATCH /api/tickets/:id",
@@ -76,7 +78,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
 
   try {
     const updated = await updateTicketFields(
-      params.id,
+      id,
       {
         title: str(body.title, 200),
         description: str(body.description),

@@ -5,9 +5,10 @@ import { ApiScope } from "@/lib/api-scopes";
 import { addTicketMessage } from "@/lib/tickets/events";
 import { actorFor, errorResponse, mayTouch, oneOf, readJson, str, unauthorized } from "@/lib/tickets/api";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 export async function POST(request: NextRequest, { params }: Ctx) {
+  const { id } = await params;
   const caller = await requireTicketAuth(
     request,
     "POST /api/tickets/:id/messages",
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest, { params }: Ctx) {
 
   try {
     const ticket = await prisma.ticket.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       select: { id: true, assigneeType: true, assigneeId: true },
     });
     if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404 });

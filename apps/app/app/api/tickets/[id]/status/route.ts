@@ -6,7 +6,7 @@ import { transitionTicket } from "@/lib/tickets/events";
 import { TICKET_STATUSES } from "@/lib/tickets/transitions";
 import { actorFor, errorResponse, mayTouch, oneOf, readJson, str, unauthorized } from "@/lib/tickets/api";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 /**
  * Requests a status change. The CRM validates the transition; callers cannot set
@@ -14,6 +14,7 @@ type Ctx = { params: { id: string } };
  * otherwise the ticket goes to NEEDS_HUMAN (response has redirected: true).
  */
 export async function POST(request: NextRequest, { params }: Ctx) {
+  const { id } = await params;
   const caller = await requireTicketAuth(
     request,
     "POST /api/tickets/:id/status",
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest, { params }: Ctx) {
 
   try {
     const ticket = await prisma.ticket.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       select: { id: true, assigneeType: true, assigneeId: true },
     });
     if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
