@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@stky/db";
 import type { Prisma } from "@stky/db";
 import { requirePermission, toActor } from "@/lib/server/guard";
+import { audit } from "@/lib/server/audit";
 import {
   TicketError,
   addTicketMessage,
@@ -202,6 +203,53 @@ export async function emailFinalMessageAction(id: string): Promise<Result> {
     );
     refresh(id);
     return { ok: true };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/** Admin only (ticket:delete). Removes the ticket with its messages, runs, events and queued webhooks. */
+export async function deleteTicketAction(id: string): Promise<Result> {
+  try {
+    await requirePermission("ticket:delete", { entity: "Ticket", entityId: id });
+    const ticket = await prisma.ticket.findUnique({ where: { id }, select: { clientId: true } });
+    if (!ticket) return { ok: false, error: "Ticket not found" };
+    await prisma.$transaction([
+      prisma.webhookDelivery.deleteMany({ where: { ticketId: id } }),
+      prisma.ticket.delete({ where: { id } }),
+    ]);
+    refresh(undefined, ticket.clientId);
+    return { ok: true };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/** Delete-on-request: erases every ticket raised by an email address (UK GDPR). Admin only. */
+export async function eraseTicketsForEmailAction(email: string): Promise<Result<{ deleted: number }>> {
+  try {
+    const user = await requirePermission("ticket:delete", { entity: "Ticket" });
+    const address = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) return { ok: false, error: "Enter a valid email address" };
+    const tickets = await prisma.ticket.findMany({
+      where: { requesterEmail: { equals: address, mode: "insensitive" } },
+      select: { id: true },
+    });
+    const ids = tickets.map((t) => t.id);
+    if (ids.length > 0) {
+      await prisma.$transaction([
+        prisma.webhookDelivery.deleteMany({ where: { ticketId: { in: ids } } }),
+        prisma.ticket.deleteMany({ where: { id: { in: ids } } }),
+      ]);
+    }
+    await audit({
+      actor: toActor(user),
+      action: "ticket.erase_for_email",
+      entity: "Ticket",
+      metadata: { deleted: ids.length },
+    });
+    refresh();
+    return { ok: true, deleted: ids.length };
   } catch (error) {
     return fail(error);
   }

@@ -44,48 +44,54 @@
 **Checkpoint 1** (code complete; production migration and a click-through on a real database are still outstanding): create a ticket in the CRM, change status, see the right clean view and a full log; UPDATE on `TicketEvent` fails; disallowed transitions refused; `pnpm lint` and `pnpm build` pass.
 
 ## Phase 2: Triage and clean view (US2, US3)
-- [ ] T100 [US2] Migration: `WebhookDelivery` table (applied to prod first)
-- [ ] T101 [US2] `apps/app/lib/webhooks/ticket-dispatch.ts` reusing signing from `lib/webhooks/dispatch.ts`; delivery row in the event transaction; tests for signature and idempotency
-- [ ] T102 [US2] `apps/app/app/api/cron/webhook-retries/route.ts` and `vercel.json` cron entry; backoff and dead-letter with Slack alert
-- [ ] T103 [US2] Delivery attempts written to `TicketEvent`
-- [ ] T104 [P] [US2] n8n triage workflow: verify signature, route by type and agent-eligible flag
-- [ ] T105 [P] [US2] `automation/agents/triage.md` prompt (read-only, ticket text quoted as data)
-- [ ] T106 [US3] Ticket intake endpoint hardening: stricter rate limit (`rateLimitByIdentity` keyed on key id and IP), honeypot, bot check
-- [ ] T107 [US3] "Report a problem" component in `StickySites/site-template` with per-site scoped key
-- [ ] T108 [US3] Add form to every new site by default and update `ops/sops/SOP-06-WEBSITE-BUILD.md`
-- [ ] T109 Privacy policy and data processing clause updated for the ticket system
+- [x] T100 [US2] Migration: `WebhookDelivery` table (applied to prod first)
+- [x] T101 [US2] `apps/app/lib/webhooks/ticket-dispatch.ts` reusing signing from `lib/webhooks/dispatch.ts`; delivery row in the event transaction; tests for signature and idempotency
+- [x] T102 [US2] `apps/app/app/api/cron/webhook-retries/route.ts` and `vercel.json` cron entry; backoff and dead-letter with Slack alert
+- [x] T103 [US2] Delivery attempts written to `TicketEvent`
+- [x] T104 [P] [US2] n8n triage workflow: verify signature, route by type and agent-eligible flag
+- [x] T105 [P] [US2] `automation/agents/triage.md` prompt (read-only, ticket text quoted as data)
+- [x] T106 [US3] Ticket intake endpoint hardening: stricter rate limit (`rateLimitByIdentity` keyed on key id and IP), honeypot, bot check
+- [x] T107 [US3] "Report a problem" component in `StickySites/site-template` with per-site scoped key
+- [ ] T108 [US3] Add form to every new site by default: the component and route are in `automation/site-template/report-a-problem/`, ready to copy into `StickySites/site-template`; still to do in the `site-template` and `ops` repos (not part of this repo)
+- [x] T109 Privacy policy and data processing clause updated for the ticket system
 
-**Checkpoint 2**: submit from a real client site form and see a triaged ticket with an acknowledgement and no manual steps.
+**Checkpoint 2** (code complete; needs a real site form, n8n and `TICKET_WEBHOOK_*` set to run): submit from a real client site form and see a triaged ticket with an acknowledgement and no manual steps.
 
 ## Phase 3: Software agent (US4)
-- [ ] T200 Spike: confirm how n8n fires a Claude Code routine and how it reports back; write findings to `specs/001-ticketing-and-agent-team/research.md`
-- [ ] T201 [US4] n8n step creating a GitHub issue in the client repo
-- [ ] T202 [US4] `automation/agents/software.md` routine prompt with forbidden areas (schema, DNS, billing, secrets, prod DB) and untrusted-ticket rule
-- [ ] T203 [US4] Routine opens PR with preview link and posts `{status, summary, final_message}`; failing checks retry once then NEEDS_HUMAN
-- [ ] T204 [US4] Run cap (2 per ticket) and daily spend cap, Slack alert on hit
-- [ ] T205 [US4] Pick the first low-risk repo (open decision 7) and run five real small tickets
+- [x] T200 Spike (docs only, nothing fired yet): confirm how n8n fires a Claude Code routine and how it reports back; write findings to `specs/001-ticketing-and-agent-team/research.md`
+- [x] T201 [US4] n8n step creating a GitHub issue in the client repo
+- [x] T202 [US4] `automation/agents/software.md` routine prompt with forbidden areas (schema, DNS, billing, secrets, prod DB) and untrusted-ticket rule
+- [x] T203 [US4] Routine opens PR with preview link and posts `{status, summary, final_message}`; failing checks retry once then NEEDS_HUMAN
+- [x] T204 [US4] Run cap (2 per ticket) and daily spend cap, Slack alert on hit
+- [ ] T205 [US4] Pick the first low-risk repo (open decision 7) and run five real small tickets. Needs a human: create the routine, the keys and import the n8n workflow (`automation/n8n/README.md`)
 
-**Checkpoint 3**: five consecutive small tickets give mergeable PRs and correct clean summaries, no cross-repo access, no secrets in logs.
+**Checkpoint 3** (cannot be run from the CRM repo: needs the routine, a repo and five real tickets): five consecutive small tickets give mergeable PRs and correct clean summaries, no cross-repo access, no secrets in logs.
 
 ## Phase 4: Portal and intake (US5)
-- [ ] T300 [US5] `apps/app/app/client/tickets/` list, detail (clean view only), reply box
-- [ ] T301 [US5] Email-in route and threading of replies
-- [ ] T302 [US5] Inbound Uptime Kuma webhook creating HOSTING_UPTIME tickets, with dedupe
-- [ ] T304 [US5] Portal shows the activity log only when `shareTechnicalDetails` is true (FR-013); test that it is hidden otherwise
-- [ ] T303 [US5] Final message sent to client (staff-sent, AI disclosure or named human)
+- [x] T300 [US5] `apps/app/app/client/tickets/` list, detail (clean view only), reply box
+- [x] T301 [US5] Email-in route and threading of replies
+- [x] T302 [US5] Inbound Uptime Kuma webhook creating HOSTING_UPTIME tickets, with dedupe
+- [x] T304 [US5] Portal shows the activity log only when `shareTechnicalDetails` is true (FR-013); test that it is hidden otherwise
+- [x] T303 [US5] Final message sent to client (staff-sent, AI disclosure or named human)
 
-**Checkpoint 4**: a client raises, tracks and gets a final message entirely in the portal.
+**Checkpoint 4** (code complete, not exercised against a real portal login): a client raises, tracks and gets a final message entirely in the portal.
 
 ## Phase 5: Other agents (US6)
-- [ ] T400 Content and SEO agent (drafts only, human review before publishing)
-- [ ] T401 Ops agent (diagnose and propose, no infra changes)
-- [ ] T402 Reply agent (drafts; staff send)
-- [ ] T403 Monthly review: success rate, rework rate, cost per ticket; cut or tighten any agent that creates more work than it saves
+- [x] T400 Content and SEO agent (drafts only, human review before publishing)
+- [x] T401 Ops agent (diagnose and propose, no infra changes)
+- [x] T402 Reply agent (drafts; staff send)
+- [ ] T403 Monthly review (a calendar habit, nothing to build): success rate, rework rate, cost per ticket; cut or tighten any agent that creates more work than it saves
 
 ## Phase 6: Retention (FR-014)
-- [ ] T500 Scheduled, audited purge of raw agent output older than 12 months (storage object and any inline raw text; `TicketEvent` rows and metadata stay); delete-on-request path for a client's tickets; document in the privacy policy
+- [x] T500 Scheduled, audited purge of raw agent output older than 12 months (storage object and any inline raw text; `TicketEvent` rows and metadata stay); delete-on-request path for a client's tickets; document in the privacy policy
 
-**Checkpoint 6**: a test run older than 12 months has its raw output removed and its events intact.
+**Checkpoint 6** (trigger behaviour tested on in-memory Postgres; purge not yet run against real data): a test run older than 12 months has its raw output removed and its events intact.
 
 ## Dependencies
 Phase 0 → 1 → 2 → 3 → 4 → 5; Phase 6 can run any time after Phase 3 produces raw output. Within a phase, `[P]` tasks run together; schema (T010-T012) blocks everything else in that phase.
+
+## Added during the build (not in the original task list)
+- [x] Agent run records and caps: `POST /api/tickets/:id/runs` and `PATCH .../runs/:runId` (2 runs per ticket, daily run and spend caps)
+- [x] Stalled-agent watchdog (in the minute cron): IN_PROGRESS agent tickets with no activity for 90 minutes go to NEEDS_HUMAN
+- [x] AI disclosure appended to every public agent message
+- [x] Admin delete-on-request (one ticket, or every ticket for an email address)

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getTicketDetail } from "@/lib/server/actions/tickets";
 import { currentStaffCan } from "@/lib/server/guard";
 import { TicketStatusBadge } from "@/components/tickets/status-badge";
-import { DetailsForm, EmailFinalMessageButton, ReplyForm, StatusForm } from "@/components/tickets/ticket-controls";
+import { DeleteTicketButton, DetailsForm, EmailFinalMessageButton, ReplyForm, StatusForm } from "@/components/tickets/ticket-controls";
 import { CLIENT_STATUS_LABELS } from "@/lib/tickets/status-labels";
 import { allowedTransitions, type TicketStatusName } from "@/lib/tickets/transitions";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
@@ -14,7 +14,7 @@ export default async function TicketDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [ticket, canUpdate] = await Promise.all([getTicketDetail(id), currentStaffCan("ticket:update")]);
+  const [ticket, canUpdate, canDelete] = await Promise.all([getTicketDetail(id), currentStaffCan("ticket:update"), currentStaffCan("ticket:delete")]);
   if (!ticket) notFound();
   const status = ticket.status as TicketStatusName;
 
@@ -82,6 +82,8 @@ export default async function TicketDetailPage({
           />
         </div>
       ) : null}
+
+      {canDelete ? <DeleteTicketButton id={ticket.id} /> : null}
 
       <details className="rounded-md border">
         <summary className="cursor-pointer p-3 text-sm font-medium">Activity log ({ticket.events.length})</summary>

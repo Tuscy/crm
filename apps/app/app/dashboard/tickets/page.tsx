@@ -4,6 +4,7 @@ import { TicketsTable } from "@/components/tickets/tickets-table";
 import { STAFF_STATUS_LABELS } from "@/lib/tickets/status-labels";
 import { TICKET_STATUSES } from "@/lib/tickets/transitions";
 import { currentStaffCan } from "@/lib/server/guard";
+import { EraseByEmailForm } from "@/components/tickets/ticket-controls";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 
 export default async function TicketsPage({
@@ -12,9 +13,10 @@ export default async function TicketsPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status } = await searchParams;
-  const [tickets, canCreate] = await Promise.all([
+  const [tickets, canCreate, canDelete] = await Promise.all([
     listTickets({ status }),
     currentStaffCan("ticket:create"),
+    currentStaffCan("ticket:delete"),
   ]);
 
   return (
@@ -39,6 +41,12 @@ export default async function TicketsPage({
         <CardHeader><CardTitle>{status ? STAFF_STATUS_LABELS[status as keyof typeof STAFF_STATUS_LABELS] ?? "Tickets" : "All tickets"}</CardTitle></CardHeader>
         <CardContent><TicketsTable tickets={tickets} /></CardContent>
       </Card>
+      {canDelete ? (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Delete on request</CardTitle></CardHeader>
+          <CardContent><EraseByEmailForm /></CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

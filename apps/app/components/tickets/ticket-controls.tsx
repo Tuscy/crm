@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import {
   addTicketMessageAction,
   changeTicketStatusAction,
+  deleteTicketAction,
   emailFinalMessageAction,
+  eraseTicketsForEmailAction,
   updateTicketAction,
 } from "@/lib/server/actions/tickets";
 import { STAFF_STATUS_LABELS } from "@/lib/tickets/status-labels";
@@ -211,5 +213,52 @@ export function EmailFinalMessageButton({ id }: { id: string }) {
       </Button>
       {note ? <span className="text-sm text-muted-foreground">{note}</span> : null}
     </div>
+  );
+}
+
+export function DeleteTicketButton({ id }: { id: string }) {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function remove() {
+    if (!confirm("Permanently delete this ticket and its whole history? This cannot be undone.")) return;
+    setPending(true);
+    const res = await deleteTicketAction(id);
+    setPending(false);
+    if (!res.ok) return setError(res.error);
+    router.push("/dashboard/tickets");
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      <Button type="button" variant="destructive" size="sm" onClick={remove} disabled={pending}>
+        {pending ? "Deleting…" : "Delete ticket"}
+      </Button>
+      {error ? <span className="text-sm text-destructive">{error}</span> : null}
+    </div>
+  );
+}
+
+export function EraseByEmailForm() {
+  const [email, setEmail] = useState("");
+  const [note, setNote] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function erase(e: React.FormEvent) {
+    e.preventDefault();
+    if (!confirm(`Permanently delete every ticket raised by ${email}? This cannot be undone.`)) return;
+    setPending(true);
+    const res = await eraseTicketsForEmailAction(email);
+    setPending(false);
+    setNote(res.ok ? `Deleted ${res.deleted} ticket${res.deleted === 1 ? "" : "s"}.` : res.error);
+  }
+
+  return (
+    <form onSubmit={erase} className="flex flex-wrap items-center gap-3">
+      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="requester@example.com" className="rounded-md border border-input bg-background px-3 py-1.5 text-sm" />
+      <Button type="submit" variant="destructive" size="sm" disabled={pending}>Erase tickets for this email</Button>
+      {note ? <span className="text-sm text-muted-foreground">{note}</span> : null}
+    </form>
   );
 }
