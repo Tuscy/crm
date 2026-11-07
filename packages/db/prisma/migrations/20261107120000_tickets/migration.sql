@@ -168,3 +168,8 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER ticket_event_no_mutate
 BEFORE UPDATE OR DELETE ON "TicketEvent"
 FOR EACH ROW EXECUTE FUNCTION ticket_event_append_only();
+
+-- Bind a tickets:intake key to one site (deleting the site deletes the key).
+ALTER TABLE "IntegrationApiKey" ADD COLUMN "siteId" TEXT;
+CREATE INDEX "IntegrationApiKey_siteId_idx" ON "IntegrationApiKey"("siteId");
+ALTER TABLE "IntegrationApiKey" ADD CONSTRAINT "IntegrationApiKey_siteId_fkey" FOREIGN KEY ("siteId") REFERENCES "Site"("id") ON DELETE CASCADE ON UPDATE CASCADE;

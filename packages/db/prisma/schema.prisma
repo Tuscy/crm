@@ -76,12 +76,16 @@ model IntegrationApiKey {
   keyPrefix  String
   keyHash    String    @unique
   scopes     String[]  @default([])
+  siteId     String? // binds a tickets:intake key to one site (and so one client)
   lastUsedAt DateTime?
   revokedAt  DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
+  site Site? @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
   @@index([keyPrefix])
+  @@index([siteId])
 }
 
 model Lead {
@@ -268,6 +272,7 @@ model Site {
   pages  Page[]
   leads  Lead[]
   tickets Ticket[]
+  integrationKeys IntegrationApiKey[]
 
   @@index([clientId])
 }
