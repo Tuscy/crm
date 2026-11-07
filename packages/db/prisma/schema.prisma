@@ -754,3 +754,23 @@ model TicketEvent {
   @@unique([ticketId, seq])
   @@index([ticketId, createdAt])
 }
+
+// Outbound ticket webhook queue (specs/001-ticketing-and-agent-team/contracts/webhook-events.md).
+// Created in the same transaction as the ticket change; the sender and the
+// /api/cron/webhook-retries route work through PENDING rows with backoff.
+model WebhookDelivery {
+  id             String    @id @default(cuid())
+  ticketId       String?
+  event          String // ticket.created | ticket.message_added | ticket.status_changed | ticket.assigned
+  payload        Json
+  status         String    @default("PENDING") // PENDING | DELIVERED | DEAD
+  attempts       Int       @default(0)
+  nextAttemptAt  DateTime  @default(now())
+  lastStatusCode Int?
+  lastError      String?
+  createdAt      DateTime  @default(now())
+  deliveredAt    DateTime?
+
+  @@index([status, nextAttemptAt])
+  @@index([ticketId])
+}

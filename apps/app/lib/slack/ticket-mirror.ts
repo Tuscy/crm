@@ -93,3 +93,8 @@ export async function mirrorStatusChanged(
 ): Promise<void> {
   await post(line(ticket, `:arrows_counterclockwise: ${from} → ${to}`));
 }
+
+/** Operational alerts (dead webhooks, spend caps). Same channel and switches as the mirror. */
+export async function postTicketAlert(text: string): Promise<void> {
+  await post(text);
+}

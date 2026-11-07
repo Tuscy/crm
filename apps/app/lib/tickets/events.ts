@@ -1,13 +1,15 @@
 import { prisma } from "@stky/db";
 import type { Prisma } from "@stky/db";
 import { waitUntil } from "@vercel/functions";
-import { redactString, redactValue } from "./redact";
+import { redactString } from "./redact";
+import { appendEvent, type TicketActor } from "./log";
 import { nextTicketReference } from "./reference";
 import {
   resolveTransition,
   type TicketStatusName,
 } from "./transitions";
 import { mirrorStatusChanged, mirrorTicketCreated } from "@/lib/slack/ticket-mirror";
+import { deliverMany, enqueueTicketWebhook } from "@/lib/webhooks/ticket-dispatch";
 
 /**
  * The only module that writes tickets. Every change appends a TicketEvent
@@ -15,10 +17,15 @@ import { mirrorStatusChanged, mirrorTicketCreated } from "@/lib/slack/ticket-mir
  * transitionTicket() so the transition table and completion contract always apply.
  */
 
-export type TicketActor = {
-  type: "CLIENT" | "STAFF" | "AGENT" | "SYSTEM";
-  name?: string | null;
-};
+export { appendEvent, type TicketActor };
+
+export const AI_DISCLOSURE = "(Drafted with AI assistance.)";
+
+/** Anything an agent says to a customer carries the AI disclosure (constitution III). */
+export function withAiDisclosure(body: string, authorType: TicketActor["type"], visibility: "PUBLIC" | "INTERNAL"): string {
+  if (authorType !== "AGENT" || visibility !== "PUBLIC" || body.includes(AI_DISCLOSURE)) return body;
+  return `${body}\n\n${AI_DISCLOSURE}`;
+}
 
 export class TicketError extends Error {
   constructor(
@@ -27,44 +34,6 @@ export class TicketError extends Error {
   ) {
     super(message);
   }
-}
-
-type Tx = Prisma.TransactionClient;
-
-/** Next per-ticket sequence number. Locks the ticket row so concurrent writers queue. */
-async function nextSeq(tx: Tx, ticketId: string): Promise<number> {
-  await tx.$queryRaw`SELECT "id" FROM "Ticket" WHERE "id" = ${ticketId} FOR UPDATE`;
-  const last = await tx.ticketEvent.aggregate({
-    where: { ticketId },
-    _max: { seq: true },
-  });
-  return (last._max.seq ?? 0) + 1;
-}
-
-export async function appendEvent(
-  tx: Tx,
-  input: {
-    ticketId: string;
-    kind: string;
-    actor: TicketActor;
-    payload?: Record<string, unknown>;
-    runId?: string | null;
-  }
-) {
-  const seq = await nextSeq(tx, input.ticketId);
-  return tx.ticketEvent.create({
-    data: {
-      ticketId: input.ticketId,
-      runId: input.runId ?? null,
-      seq,
-      kind: input.kind,
-      actorType: input.actor.type,
-      actorName: input.actor.name ?? null,
-      payload: input.payload
-        ? (redactValue(input.payload) as Prisma.InputJsonValue)
-        : undefined,
-    },
-  });
 }
 
 export type CreateTicketInput = {
@@ -102,7 +71,7 @@ export async function createTicket(input: CreateTicketInput, actor: TicketActor)
     }
   }
 
-  const ticket = await prisma.$transaction(async (tx) => {
+  const { ticket, deliveryId } = await prisma.$transaction(async (tx) => {
     const reference = await nextTicketReference(tx);
     const created = await tx.ticket.create({
       data: {
@@ -127,9 +96,16 @@ export async function createTicket(input: CreateTicketInput, actor: TicketActor)
       actor,
       payload: { source: input.source, type: created.type, priority: created.priority },
     });
-    return created;
+    const deliveryId = await enqueueTicketWebhook(tx, {
+      ticket: created,
+      event: "ticket.created",
+      actor,
+      data: { source: input.source, title: created.title, description: created.description },
+    });
+    return { ticket: created, deliveryId };
   });
 
+  waitUntil(deliverMany([deliveryId]));
   waitUntil(
     mirrorTicketCreated({
       id: ticket.id,
@@ -207,7 +183,15 @@ export async function transitionTicket(
       },
     });
 
+    const deliveryId = await enqueueTicketWebhook(tx, {
+      ticket: updated,
+      event: "ticket.status_changed",
+      actor,
+      data: { from, to: resolved.to, requested: to, redirected: resolved.redirected, summary: resolved.summary },
+    });
+
     return {
+      deliveryId,
       ticket: updated,
       from,
       redirected: resolved.redirected,
@@ -216,6 +200,7 @@ export async function transitionTicket(
     };
   });
 
+  waitUntil(deliverMany([result.deliveryId]));
   waitUntil(
     mirrorStatusChanged(
       {
@@ -246,15 +231,15 @@ export async function addTicketMessage(
     throw new TicketError("Clients cannot post internal messages", "FORBIDDEN");
   }
 
-  return prisma.$transaction(async (tx) => {
-    const ticket = await tx.ticket.findUnique({ where: { id: ticketId }, select: { id: true } });
+  const { message, deliveryId } = await prisma.$transaction(async (tx) => {
+    const ticket = await tx.ticket.findUnique({ where: { id: ticketId } });
     if (!ticket) throw new TicketError("Ticket not found", "NOT_FOUND");
     const message = await tx.ticketMessage.create({
       data: {
         ticketId,
         authorType: actor.type,
         authorName: actor.name ?? null,
-        body: redactString(body),
+        body: withAiDisclosure(redactString(body), actor.type, visibility),
         visibility,
       },
     });
@@ -264,8 +249,20 @@ export async function addTicketMessage(
       actor,
       payload: { messageId: message.id, visibility },
     });
-    return message;
+    // Internal notes never leave the CRM, so no webhook and no body in any payload.
+    const deliveryId =
+      visibility === "PUBLIC"
+        ? await enqueueTicketWebhook(tx, {
+            ticket,
+            event: "ticket.message_added",
+            actor,
+            data: { messageId: message.id, authorType: message.authorType, visibility, body: message.body },
+          })
+        : null;
+    return { message, deliveryId };
   });
+  waitUntil(deliverMany([deliveryId]));
+  return message;
 }
 
 export type UpdateTicketFields = {
@@ -286,7 +283,7 @@ export async function updateTicketFields(
   fields: UpdateTicketFields,
   actor: TicketActor
 ) {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const existing = await tx.ticket.findUnique({ where: { id: ticketId } });
     if (!existing) throw new TicketError("Ticket not found", "NOT_FOUND");
 
@@ -317,7 +314,7 @@ export async function updateTicketFields(
     );
     set("shareTechnicalDetails", fields.shareTechnicalDetails);
 
-    if (changed.length === 0) return existing;
+    if (changed.length === 0) return { updated: existing, deliveryId: null };
 
     const updated = await tx.ticket.update({ where: { id: ticketId }, data });
     await appendEvent(tx, {
@@ -326,6 +323,18 @@ export async function updateTicketFields(
       actor,
       payload: { fields: changed },
     });
-    return updated;
+    const assignmentChanged =
+      updated.assigneeType !== existing.assigneeType || updated.assigneeId !== existing.assigneeId;
+    const deliveryId = assignmentChanged
+      ? await enqueueTicketWebhook(tx, {
+          ticket: updated,
+          event: "ticket.assigned",
+          actor,
+          data: { assigneeType: updated.assigneeType, assigneeId: updated.assigneeId },
+        })
+      : null;
+    return { updated, deliveryId };
   });
+  waitUntil(deliverMany([result.deliveryId]));
+  return result.updated;
 }
