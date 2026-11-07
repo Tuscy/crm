@@ -1,8 +1,8 @@
-import { listIntegrationKeys } from "@/lib/server/actions/integration-keys";
+import { listIntegrationKeys, listSitesForKeys } from "@/lib/server/actions/integration-keys";
 import { IntegrationKeysForm } from "./integration-keys-form";
 
 export default async function IntegrationApiKeysPage() {
-  const keys = await listIntegrationKeys();
+  const [keys, sites] = await Promise.all([listIntegrationKeys(), listSitesForKeys()]);
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -14,7 +14,7 @@ export default async function IntegrationApiKeysPage() {
           supported but should be rotated away.
         </p>
       </div>
-      <IntegrationKeysForm initialKeys={keys} />
+      <IntegrationKeysForm initialKeys={keys} sites={sites} />
     </div>
   );
 }
