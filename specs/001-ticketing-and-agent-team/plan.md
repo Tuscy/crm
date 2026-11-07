@@ -4,7 +4,7 @@
 
 ## Summary
 
-Add a ticket system to the Stky CRM (`apps/app`, `packages/db`) with a clean status/final-message view over an append-only log, a scoped-key API, signed webhooks to n8n, and an agent team that only ever produces drafts and PRs. Built in five gated phases.
+Add a ticket system to the Stky CRM (`apps/app`, `packages/db`) with a clean status/final-message view over an append-only log, a scoped-key API, signed webhooks to n8n, and an agent team that only ever produces drafts and PRs. Built in gated phases (1 to 5, plus retention).
 
 ## Technical Context
 
@@ -77,13 +77,14 @@ automation/agents/                        # triage.md, software.md, ... prompts 
 ## Design decisions
 
 1. **Status writer.** `transitionTicket(ticketId, to, actor, payload)` is the only function that updates `Ticket.status`. It checks the transition table, enforces the completion contract for AWAITING_REVIEW/RESOLVED, writes the event and fires webhook and Slack. Route handlers and server actions both call it.
-2. **Append-only log.** Migration adds a trigger `ticket_event_no_mutate` raising on UPDATE and DELETE. Retention purge (12 months) runs as a dedicated, audited SQL path that disables nothing: it nulls `rawLogRef` content in storage, not rows.
-3. **Key model.** Reuse `IntegrationApiKey`; add `kind` scopes. Agent keys: `tickets:agent` (events, messages, status requests on tickets assigned to that agent). Site-form keys: `tickets:intake`, bound to one `siteId` via key metadata so a key cannot post for another client. `requireTicketAuth` rejects the legacy env key and empty-scope wildcards.
-4. **Redaction.** `redactSecrets()` runs over payloads before `TicketEvent` insert: bearer tokens, `sk_` keys, password-like key/value pairs, long hex/base64 strings. Unit tested.
-5. **Webhooks.** `WebhookDelivery` rows created in the same transaction as the event; sender attempts immediately via `waitUntil`; Vercel cron every minute retries with backoff (1m, 5m, 30m, 2h, then dead-letter and Slack alert). Idempotency key = delivery id.
-6. **Clean view.** `status-labels.ts` maps internal to client labels; the portal and site form only ever read `{label, statusSummary, finalMessage, PUBLIC messages}`.
-7. **Reference numbers.** `TicketCounter` single row incremented in the create transaction, formatted `TKT-0001`.
-8. **Agent prompts** live in `automation/agents/` and carry the forbidden-areas list and the untrusted-ticket-text rule.
+2. **Log visibility.** `Ticket.shareTechnicalDetails` (default false). The staff API/UI always include the log; the portal and key-based reads include it only when the flag is true. Toggling is staff-only and audited (decision 1).
+3. **Append-only log.** Migration adds a trigger `ticket_event_no_mutate` raising on UPDATE and DELETE. Retention (12 months, decision 4) purges raw output in storage and any inline raw text, never `TicketEvent` rows; scheduled and audited (Phase 6).
+4. **Key model.** Reuse `IntegrationApiKey`; add `kind` scopes. Agent keys: `tickets:agent` (events, messages, status requests on tickets assigned to that agent). Site-form keys: `tickets:intake`, bound to one `siteId` via key metadata so a key cannot post for another client. `requireTicketAuth` rejects the legacy env key and empty-scope wildcards.
+5. **Redaction.** `redactSecrets()` runs over payloads before `TicketEvent` insert: bearer tokens, `sk_` keys, password-like key/value pairs, long hex/base64 strings. Unit tested.
+6. **Webhooks.** `WebhookDelivery` rows created in the same transaction as the event; sender attempts immediately via `waitUntil`; Vercel cron every minute retries with backoff (1m, 5m, 30m, 2h, then dead-letter and Slack alert). Idempotency key = delivery id.
+7. **Clean view.** `status-labels.ts` maps internal to client labels; the portal and site form only ever read `{label, statusSummary, finalMessage, PUBLIC messages}`.
+8. **Reference numbers.** `TicketCounter` single row incremented in the create transaction, formatted `TKT-0001`.
+9. **Agent prompts** live in `automation/agents/` and carry the forbidden-areas list and the untrusted-ticket-text rule.
 
 ## Phases and exit tests
 
@@ -102,6 +103,10 @@ Spike first: how n8n fires a Claude Code routine and how it reports back (writte
 ### Phase 4: Client portal and more intake
 Portal ticket list, detail and reply; email-in; inbound Uptime Kuma webhook creating HOSTING_UPTIME tickets.
 **Exit test**: a client raises, tracks and gets a final message entirely in the portal.
+
+### Phase 6: Retention
+Scheduled purge of raw agent output at 12 months, delete-on-request path.
+**Exit test**: a run older than 12 months loses its raw output and keeps its events.
 
 ### Phase 5: Other agents
 Content/SEO, ops, reply agents in that order, each draft-only. Monthly review of success rate, rework rate and cost per ticket.

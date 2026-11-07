@@ -74,6 +74,8 @@ Each behind the same draft-only rule, reviewed monthly for success rate, rework 
 - **FR-006**: One API (`POST /api/tickets`) serves every intake route; agents call back via `/events`, `/messages`, `/status` with a ticket-only scoped key.
 - **FR-007**: CRM emits signed (HMAC-SHA256), idempotent, retried `ticket.created`, `ticket.message_added`, `ticket.status_changed`, `ticket.assigned` events.
 - **FR-008**: Secrets are redacted before any event write.
+- **FR-013**: `Ticket.shareTechnicalDetails` (default false) controls whether a client can see the activity log; only staff can change it.
+- **FR-014**: Raw agent output is purged 12 months after the run; summaries, final messages and events metadata remain.
 - **FR-009**: Messages carry PUBLIC or INTERNAL visibility; clients only ever see PUBLIC messages and the clean view.
 - **FR-010**: Slack `#tickets` mirrors new tickets and status changes (channel topic checked before posting).
 - **FR-011**: Run caps per ticket and per day, with Slack alerts.
@@ -93,17 +95,27 @@ Each behind the same draft-only rule, reviewed monthly for success rate, rework 
 - **SC-004**: A client completes raise, track and final message entirely in the portal.
 - **SC-005**: No agent can read or write outside its one ticket, one repo, one branch.
 
+## Clarifications
+
+### Session 2026-11-07
+- Q: Who sees the full activity log? → A: Staff only, plus a per-ticket share switch.
+- Q: Raw agent output retention? → A: 12 months, then purged; delete on client request.
+- Q: Ticket reference format? → A: Global TKT-0001 sequence.
+- Q: Webhook retry driver? → A: Vercel cron.
+
 ## Open decisions (recommended default in brackets)
 
-1. [NEEDS CLARIFICATION] Who can see the full log? [Staff only, with a per-ticket "share technical details" switch.]
+Decisions 1, 4, 5 and 9 are closed. The rest do not block Phase 1.
+
+1. ~~Who can see the full log?~~ **Decided 2026-11-07**: staff only, with a per-ticket "share technical details" switch.
 2. [NEEDS CLARIFICATION] Raw log storage. [Postgres with a size cap now; Cloudflare R2 pointer in `rawLogRef` when output grows.]
 3. [NEEDS CLARIFICATION] Triage model and runner. [Haiku via a direct Claude API call in n8n; routines only for software work.]
-4. [NEEDS CLARIFICATION] Retention. [Summaries and final messages for the client relationship; raw agent output purged at 12 months; delete on request.]
-5. [NEEDS CLARIFICATION] Reference format. [One global TKT-0001 sequence.]
+4. ~~Retention~~ **Decided 2026-11-07**: summaries and final messages kept for the client relationship; raw agent output purged at 12 months; delete on request.
+5. ~~Reference format~~ **Decided 2026-11-07**: one global TKT-0001 sequence.
 6. [NEEDS CLARIFICATION] Build or buy: confirm a lightweight helpdesk would not cover intake and Slack alone. [Build, because of the link to client, site, repo and agents.]
 7. [NEEDS CLARIFICATION] First repo for the software agent. [A low-risk internal or template-based site.]
 8. [NEEDS CLARIFICATION] Plan home. [Copy to `ops/plans/PLAN-TICKETING.md` once agreed.]
-9. [NEEDS CLARIFICATION] Webhook retry scheduler. [Vercel cron, because the app already deploys there; n8n is the fallback.]
+9. ~~Webhook retry scheduler~~ **Decided 2026-11-07**: Vercel cron (n8n-driven retries only if the plan can't run per-minute cron).
 
 ## Assumptions
 - Slack is the default alert channel; the connector and token are provisioned separately.

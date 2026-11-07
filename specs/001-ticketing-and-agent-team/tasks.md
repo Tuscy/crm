@@ -4,13 +4,13 @@
 **Format**: `[ID] [P?] [Story] Description`. `[P]` means it can run alongside other `[P]` tasks (different files). Paths are relative to the CRM repo root. Each phase ends at a checkpoint; do not start the next phase until it passes. One commit per group.
 
 ## Phase 0: Decisions to close before Phase 1
-- [ ] T001 Rhyse confirms open decisions 1, 4, 5 and 9 in spec.md (log visibility, retention, reference format, retry scheduler)
-- [ ] T002 Confirm Vercel plan supports per-minute cron, else plan n8n-driven retries
+- [x] T001 Open decisions 1, 4, 5 and 9 closed 2026-11-07 (see spec.md Clarifications)
+- [ ] T002 Confirm the Vercel plan supports per-minute cron (decision 9 assumes it); otherwise n8n calls the retry route
 
 ## Phase 1: Foundations (US1)
 
 ### Schema and migration
-- [ ] T010 [US1] Add models and enums to `packages/db/prisma/schema.prisma`: Ticket, TicketMessage, TicketEvent, AgentRun, TicketCounter; enums for status, type, priority, requester/assignee/author type, visibility
+- [ ] T010 [US1] Add models and enums to `packages/db/prisma/schema.prisma`: Ticket (including `shareTechnicalDetails` boolean, default false), TicketMessage, TicketEvent, AgentRun, TicketCounter; enums for status, type, priority, requester/assignee/author type, visibility
 - [ ] T011 [US1] Write `packages/db/prisma/migrations/<ts>_tickets/migration.sql` including the `TicketEvent` no-update/no-delete trigger
 - [ ] T012 [US1] Test the migration on a Neon branch, then apply to production with `prisma migrate deploy` BEFORE any code deploy
 - [ ] T013 [P] [US1] `pnpm db:generate`, `pnpm lint`
@@ -33,7 +33,7 @@
 - [ ] T041 [US1] `apps/app/app/api/tickets/[id]/{events,messages,status}/route.ts`
 - [ ] T042 [US1] `apps/app/lib/server/actions/tickets.ts` (create, update, reply, change status) using `requirePermission` and `audit()`
 - [ ] T043 [P] [US1] `apps/app/app/dashboard/tickets/page.tsx` list
-- [ ] T044 [US1] `apps/app/app/dashboard/tickets/[id]/page.tsx` detail: status, summary, final message, conversation, collapsed activity log
+- [ ] T044 [US1] `apps/app/app/dashboard/tickets/[id]/page.tsx` detail: status, summary, final message, conversation, collapsed activity log, and a staff-only "share technical details" toggle (audited)
 - [ ] T045 [P] [US1] Add `tickets` tab to `apps/app/app/dashboard/clients/[id]/page.tsx`
 - [ ] T046 [P] [US1] Nav entry in `apps/app/components/dashboard/dashboard-nav.tsx`
 - [ ] T047 [US1] Key creation UI supports ticket scopes and site binding (`apps/app/app/dashboard/settings/api-keys/`)
@@ -71,6 +71,7 @@
 - [ ] T300 [US5] `apps/app/app/client/tickets/` list, detail (clean view only), reply box
 - [ ] T301 [US5] Email-in route and threading of replies
 - [ ] T302 [US5] Inbound Uptime Kuma webhook creating HOSTING_UPTIME tickets, with dedupe
+- [ ] T304 [US5] Portal shows the activity log only when `shareTechnicalDetails` is true (FR-013); test that it is hidden otherwise
 - [ ] T303 [US5] Final message sent to client (staff-sent, AI disclosure or named human)
 
 **Checkpoint 4**: a client raises, tracks and gets a final message entirely in the portal.
@@ -81,5 +82,10 @@
 - [ ] T402 Reply agent (drafts; staff send)
 - [ ] T403 Monthly review: success rate, rework rate, cost per ticket; cut or tighten any agent that creates more work than it saves
 
+## Phase 6: Retention (FR-014)
+- [ ] T500 Scheduled, audited purge of raw agent output older than 12 months (storage object and any inline raw text; `TicketEvent` rows and metadata stay); delete-on-request path for a client's tickets; document in the privacy policy
+
+**Checkpoint 6**: a test run older than 12 months has its raw output removed and its events intact.
+
 ## Dependencies
-Phase 0 → 1 → 2 → 3 → 4 → 5. Within a phase, `[P]` tasks run together; schema (T010-T012) blocks everything else in that phase.
+Phase 0 → 1 → 2 → 3 → 4 → 5; Phase 6 can run any time after Phase 3 produces raw output. Within a phase, `[P]` tasks run together; schema (T010-T012) blocks everything else in that phase.
