@@ -10,38 +10,38 @@
 ## Phase 1: Foundations (US1)
 
 ### Schema and migration
-- [ ] T010 [US1] Add models and enums to `packages/db/prisma/schema.prisma`: Ticket (including `shareTechnicalDetails` boolean, default false), TicketMessage, TicketEvent, AgentRun, TicketCounter; enums for status, type, priority, requester/assignee/author type, visibility
-- [ ] T011 [US1] Write `packages/db/prisma/migrations/<ts>_tickets/migration.sql` including the `TicketEvent` no-update/no-delete trigger
-- [ ] T012 [US1] Test the migration on a Neon branch, then apply to production with `prisma migrate deploy` BEFORE any code deploy
-- [ ] T013 [P] [US1] `pnpm db:generate`, `pnpm lint`
+- [x] T010 [US1] Add models and enums to `packages/db/prisma/schema.prisma`: Ticket (including `shareTechnicalDetails` boolean, default false), TicketMessage, TicketEvent, AgentRun, TicketCounter; enums for status, type, priority, requester/assignee/author type, visibility
+- [x] T011 [US1] Write `packages/db/prisma/migrations/<ts>_tickets/migration.sql` including the `TicketEvent` no-update/no-delete trigger
+- [ ] T012 [US1] Apply to production with `prisma migrate deploy` BEFORE any code deploy. Tested so far on an in-memory Postgres (PGlite): all 21 migrations apply; UPDATE and direct DELETE on `TicketEvent` are refused; Ticket/Client cascade deletes still work. Still to do: a Neon branch rehearsal and the production apply (Rhyse)
+- [x] T013 [P] [US1] `pnpm db:generate` done. `pnpm lint` is not usable: ESLint was never configured in `apps/app` (`next lint` prompts for setup); `next build` and `tsc --noEmit` pass instead. `pnpm build` needs `NODE_OPTIONS=--max-old-space-size=8192` here (default heap ran out)
 
 ### Tests and core logic
-- [ ] T020 [US1] Add Vitest to `apps/app` (`test` script, config) and wire into turbo
-- [ ] T021 [P] [US1] `apps/app/lib/tickets/transitions.ts` plus tests: allowed-transition table, completion contract
-- [ ] T022 [P] [US1] `apps/app/lib/tickets/redact.ts` plus tests: tokens, `sk_` keys, password pairs
-- [ ] T023 [P] [US1] `apps/app/lib/tickets/status-labels.ts`: internal to client label map
-- [ ] T024 [US1] `apps/app/lib/tickets/reference.ts`: TKT-0001 from `TicketCounter` inside the create transaction
-- [ ] T025 [US1] `apps/app/lib/tickets/events.ts`: `emitTicketEvent()` (redact, assign `seq`, insert) and `transitionTicket()` as sole status writer
+- [x] T020 [US1] Add Vitest to `apps/app` (`test` script, config) and wire into turbo
+- [x] T021 [P] [US1] `apps/app/lib/tickets/transitions.ts` plus tests: allowed-transition table, completion contract
+- [x] T022 [P] [US1] `apps/app/lib/tickets/redact.ts` plus tests: tokens, `sk_` keys, password pairs
+- [x] T023 [P] [US1] `apps/app/lib/tickets/status-labels.ts`: internal to client label map
+- [x] T024 [US1] `apps/app/lib/tickets/reference.ts`: TKT-0001 from `TicketCounter` inside the create transaction
+- [x] T025 [US1] `apps/app/lib/tickets/events.ts`: `emitTicketEvent()` (redact, assign `seq`, insert) and `transitionTicket()` as sole status writer
 
 ### Permissions and keys
-- [ ] T030 [P] [US1] Add `ticket` to `BUSINESS_RESOURCES` in `apps/app/lib/permissions.ts`
-- [ ] T031 [P] [US1] Add `tickets:*` scopes in `apps/app/lib/api-scopes.ts`
-- [ ] T032 [US1] Add `requireTicketAuth()` in `apps/app/lib/api-auth.ts`: returns key record, no legacy fallback, no empty-scope wildcard, site binding check; tests
+- [x] T030 [P] [US1] Add `ticket` to `BUSINESS_RESOURCES` in `apps/app/lib/permissions.ts`
+- [x] T031 [P] [US1] Add `tickets:*` scopes in `apps/app/lib/api-scopes.ts`
+- [x] T032 [US1] Add `requireTicketAuth()` in `apps/app/lib/api-auth.ts`: returns key record, no legacy fallback, no empty-scope wildcard, site binding check; tests
 
 ### API and UI
-- [ ] T040 [US1] `apps/app/app/api/tickets/route.ts` and `[id]/route.ts` per contracts/tickets-api.md
-- [ ] T041 [US1] `apps/app/app/api/tickets/[id]/{events,messages,status}/route.ts`
-- [ ] T042 [US1] `apps/app/lib/server/actions/tickets.ts` (create, update, reply, change status) using `requirePermission` and `audit()`
-- [ ] T043 [P] [US1] `apps/app/app/dashboard/tickets/page.tsx` list
-- [ ] T044 [US1] `apps/app/app/dashboard/tickets/[id]/page.tsx` detail: status, summary, final message, conversation, collapsed activity log, and a staff-only "share technical details" toggle (audited)
-- [ ] T045 [P] [US1] Add `tickets` tab to `apps/app/app/dashboard/clients/[id]/page.tsx`
-- [ ] T046 [P] [US1] Nav entry in `apps/app/components/dashboard/dashboard-nav.tsx`
-- [ ] T047 [US1] Key creation UI supports ticket scopes and site binding (`apps/app/app/dashboard/settings/api-keys/`)
+- [x] T040 [US1] `apps/app/app/api/tickets/route.ts` and `[id]/route.ts` per contracts/tickets-api.md
+- [x] T041 [US1] `apps/app/app/api/tickets/[id]/{events,messages,status}/route.ts`
+- [x] T042 [US1] `apps/app/lib/server/actions/tickets.ts` (create, update, reply, change status) using `requirePermission` and `audit()`
+- [x] T043 [P] [US1] `apps/app/app/dashboard/tickets/page.tsx` list
+- [x] T044 [US1] `apps/app/app/dashboard/tickets/[id]/page.tsx` detail: status, summary, final message, conversation, collapsed activity log, and a staff-only "share technical details" toggle (audited)
+- [x] T045 [P] [US1] Add `tickets` tab to `apps/app/app/dashboard/clients/[id]/page.tsx`
+- [x] T046 [P] [US1] Nav entry in `apps/app/components/dashboard/dashboard-nav.tsx`
+- [x] T047 [US1] Key creation UI supports ticket scopes and site binding (`apps/app/app/dashboard/settings/api-keys/`)
 
 ### Slack mirror
-- [ ] T050 [US1] `apps/app/lib/slack/client.ts` and `ticket-mirror.ts` behind `SLACK_TICKETS_ENABLED`; check channel topic first; document env vars in `.env.example`
+- [x] T050 [US1] `apps/app/lib/slack/client.ts` and `ticket-mirror.ts` behind `SLACK_TICKETS_ENABLED`; check channel topic first; document env vars in `.env.example`
 
-**Checkpoint 1**: create a ticket in the CRM, change status, see the right clean view and a full log; UPDATE on `TicketEvent` fails; disallowed transitions refused; `pnpm lint` and `pnpm build` pass.
+**Checkpoint 1** (code complete; production migration and a click-through on a real database are still outstanding): create a ticket in the CRM, change status, see the right clean view and a full log; UPDATE on `TicketEvent` fails; disallowed transitions refused; `pnpm lint` and `pnpm build` pass.
 
 ## Phase 2: Triage and clean view (US2, US3)
 - [ ] T100 [US2] Migration: `WebhookDelivery` table (applied to prod first)
