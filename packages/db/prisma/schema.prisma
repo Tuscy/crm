@@ -199,6 +199,7 @@ model Client {
   googleAdsConnections GoogleAdsConnection[]
   siteBuilds           SiteBuild[]
   gbpPosts             GBPPost[]
+  tickets              Ticket[]
 
   @@index([xeroContactId])
 }
@@ -266,6 +267,7 @@ model Site {
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
   pages  Page[]
   leads  Lead[]
+  tickets Ticket[]
 
   @@index([clientId])
 }
@@ -592,4 +594,158 @@ model AuditLog {
   @@index([actorId])
   @@index([entity, entityId])
   @@index([action])
+}
+
+// ---------------------------------------------------------------------------
+// Ticketing (specs/001-ticketing-and-agent-team). Only the CRM API changes
+// Ticket.status (apps/app/lib/tickets/events.ts). TicketEvent is append-only:
+// a database trigger (see the tickets migration) rejects UPDATE and direct DELETE.
+// ---------------------------------------------------------------------------
+
+enum TicketStatus {
+  NEW
+  TRIAGED
+  IN_PROGRESS
+  AWAITING_REVIEW
+  AWAITING_CLIENT
+  NEEDS_HUMAN
+  RESOLVED
+  CLOSED
+}
+
+enum TicketType {
+  SITE_CHANGE
+  BUG
+  CONTENT
+  HOSTING_UPTIME
+  SEO_ADS_REPORTING
+  BILLING_ADMIN
+  INTERNAL
+  OTHER
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum TicketSource {
+  CRM
+  PORTAL
+  SITE_FORM
+  EMAIL
+  UPTIME
+  AGENT
+}
+
+enum TicketActorType {
+  CLIENT
+  STAFF
+  AGENT
+  SYSTEM
+}
+
+enum TicketAssigneeType {
+  NONE
+  HUMAN
+  AGENT
+}
+
+enum TicketVisibility {
+  PUBLIC
+  INTERNAL
+}
+
+model TicketCounter {
+  id         Int @id @default(1)
+  lastNumber Int @default(0)
+}
+
+model Ticket {
+  id                    String             @id @default(cuid())
+  reference             String             @unique // TKT-0001
+  clientId              String
+  siteId                String?
+  requesterType         TicketActorType
+  requesterName         String?
+  requesterEmail        String?
+  source                TicketSource
+  type                  TicketType         @default(OTHER)
+  priority              TicketPriority     @default(NORMAL)
+  status                TicketStatus       @default(NEW)
+  title                 String
+  description           String
+  assigneeType          TicketAssigneeType @default(NONE)
+  assigneeId            String? // staff user id, or agent name
+  agentEligible         Boolean            @default(false)
+  statusSummary         String? // clean one-line status shown to clients
+  finalMessage          String? // plain-English outcome
+  shareTechnicalDetails Boolean            @default(false) // staff-only switch: client may see the log
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  resolvedAt            DateTime?
+
+  client   Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  site     Site?           @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  messages TicketMessage[]
+  events   TicketEvent[]
+  runs     AgentRun[]
+
+  @@index([clientId])
+  @@index([siteId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model TicketMessage {
+  id         String           @id @default(cuid())
+  ticketId   String
+  authorType TicketActorType
+  authorName String?
+  body       String
+  visibility TicketVisibility @default(PUBLIC)
+  createdAt  DateTime         @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+}
+
+model AgentRun {
+  id           String    @id @default(cuid())
+  ticketId     String
+  agentName    String
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+  outcome      String? // SUCCEEDED | FAILED | NEEDS_HUMAN
+  prUrl        String?
+  previewUrl   String?
+  costEstimate Decimal?  @db.Decimal(10, 4)
+  rawLogRef    String? // pointer to long output in storage (Phase 6 purges it)
+
+  ticket Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  events TicketEvent[]
+
+  @@index([ticketId])
+}
+
+// Append-only activity log. No application code updates or deletes rows.
+model TicketEvent {
+  id        String          @id @default(cuid())
+  ticketId  String
+  runId     String?
+  seq       Int // per-ticket, starts at 1
+  kind      String // e.g. "ticket.created", "status.changed", "agent.step"
+  actorType TicketActorType
+  actorName String?
+  payload   Json?
+  createdAt DateTime        @default(now())
+
+  ticket Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  run    AgentRun? @relation(fields: [runId], references: [id], onDelete: SetNull)
+
+  @@unique([ticketId, seq])
+  @@index([ticketId, createdAt])
 }
