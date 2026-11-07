@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@stky/db";
 import type { Prisma } from "@stky/db";
 import { requireTicketAuth } from "@/lib/api-auth";
+import { getClientIp, isOverRateLimit } from "@stky/security";
+import { verifyTurnstile } from "@/lib/tickets/turnstile";
 import { ApiScope } from "@/lib/api-scopes";
 import { createTicket } from "@/lib/tickets/events";
 import { toClientView } from "@/lib/tickets/status-labels";
@@ -26,6 +28,7 @@ export async function GET(request: NextRequest) {
     const sp = new URL(request.url).searchParams;
     const where: Prisma.TicketWhereInput = {
       ...(sp.get("clientId") && { clientId: sp.get("clientId")! }),
+      ...(sp.get("reference") && { reference: sp.get("reference")! }),
       ...(sp.get("status") && { status: sp.get("status") as TicketStatusName }),
       ...(sp.get("type") && { type: sp.get("type") as (typeof TICKET_TYPES)[number] }),
     };
@@ -60,6 +63,21 @@ export async function POST(request: NextRequest) {
     // Honeypot: a filled hidden field means a bot. Pretend it worked, store nothing.
     if (isIntake && typeof body.website === "string" && body.website.trim() !== "") {
       return NextResponse.json({ ok: true }, { status: 201 });
+    }
+
+    if (isIntake && caller.kind === "key") {
+      // Public form: per-key ceiling, per-visitor limit, optional Turnstile.
+      // The site's server must forward the visitor's IP in x-forwarded-for.
+      const ip = getClientIp(request);
+      if (
+        (await isOverRateLimit(caller.keyId, "intakeSite")) ||
+        (await isOverRateLimit(`${caller.keyId}:${ip}`, "intake"))
+      ) {
+        return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "600" } });
+      }
+      if (!(await verifyTurnstile(str(body.turnstileToken, 4096), ip))) {
+        return NextResponse.json({ error: "Bot check failed" }, { status: 403 });
+      }
     }
 
     let clientId: string | undefined;
