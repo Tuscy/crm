@@ -17,6 +17,8 @@ export const ApiScope = {
   TICKETS_WRITE: "tickets:write",
   TICKETS_AGENT: "tickets:agent",
   TICKETS_INTAKE: "tickets:intake",
+  TICKETS_EMAIL: "tickets:email",
+  TICKETS_UPTIME: "tickets:uptime",
 } as const;
 
 export type ApiScopeName = (typeof ApiScope)[keyof typeof ApiScope];

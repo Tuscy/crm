@@ -32,6 +32,12 @@ export default async function ClientLayout({
                 Leads
               </Link>
               <Link
+                href="/client/tickets"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Requests
+              </Link>
+              <Link
                 href="/client/analytics"
                 className="text-muted-foreground hover:text-foreground"
               >

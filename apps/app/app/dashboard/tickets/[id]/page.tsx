@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getTicketDetail } from "@/lib/server/actions/tickets";
 import { currentStaffCan } from "@/lib/server/guard";
 import { TicketStatusBadge } from "@/components/tickets/status-badge";
-import { DetailsForm, ReplyForm, StatusForm } from "@/components/tickets/ticket-controls";
+import { DetailsForm, EmailFinalMessageButton, ReplyForm, StatusForm } from "@/components/tickets/ticket-controls";
 import { CLIENT_STATUS_LABELS } from "@/lib/tickets/status-labels";
 import { allowedTransitions, type TicketStatusName } from "@/lib/tickets/transitions";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
@@ -41,6 +41,7 @@ export default async function TicketDetailPage({
           <p><span className="font-medium">Status:</span> {CLIENT_STATUS_LABELS[status]}</p>
           <p><span className="font-medium">Summary:</span> {ticket.statusSummary ?? <span className="text-muted-foreground">None yet</span>}</p>
           <p><span className="font-medium">Final message:</span> {ticket.finalMessage ?? <span className="text-muted-foreground">None yet</span>}</p>
+          {canUpdate && ticket.finalMessage && ticket.requesterEmail ? <EmailFinalMessageButton id={ticket.id} /> : null}
         </CardContent>
       </Card>
 

@@ -18,6 +18,8 @@ import {
   oneOf,
 } from "@/lib/tickets/api";
 import { TICKET_STATUSES, type TicketStatusName } from "@/lib/tickets/transitions";
+import { appendEvent } from "@/lib/tickets/log";
+import { sendTicketEmail } from "@/lib/email/ticket-email";
 
 type Result<T = unknown> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -168,6 +170,37 @@ export async function updateTicketAction(input: {
       staffActor(user)
     );
     refresh(input.id);
+    return { ok: true };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Staff send the ticket's final message to the client by email. A named person signs it
+ * (constitution III: customer sends stay human). The send is recorded in the activity log.
+ */
+export async function emailFinalMessageAction(id: string): Promise<Result> {
+  try {
+    const user = await requirePermission("ticket:update", { entity: "Ticket", entityId: id });
+    const ticket = await prisma.ticket.findUnique({ where: { id } });
+    if (!ticket) return { ok: false, error: "Ticket not found" };
+    if (!ticket.finalMessage) return { ok: false, error: "This ticket has no final message yet" };
+    if (!ticket.requesterEmail) return { ok: false, error: "This ticket has no requester email" };
+
+    const sent = await sendTicketEmail({
+      to: ticket.requesterEmail,
+      reference: ticket.reference,
+      subject: ticket.title,
+      text: ticket.finalMessage,
+      signedBy: user.email.split("@")[0],
+    });
+    if (!sent.ok) return { ok: false, error: sent.error ?? "Email failed" };
+
+    await prisma.$transaction((tx) =>
+      appendEvent(tx, { ticketId: id, kind: "email.sent", actor: staffActor(user), payload: { kind: "final_message", to: ticket.requesterEmail } })
+    );
+    refresh(id);
     return { ok: true };
   } catch (error) {
     return fail(error);

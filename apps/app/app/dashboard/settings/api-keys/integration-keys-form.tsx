@@ -34,6 +34,8 @@ const SCOPE_OPTIONS: { value: string; label: string }[] = [
   { value: "tickets:read", label: "tickets:read" },
   { value: "tickets:write", label: "tickets:write (create/update, status)" },
   { value: "tickets:agent", label: "tickets:agent (events/messages/status on tickets assigned to this key's label)" },
+  { value: "tickets:email", label: "tickets:email (inbound email forwarder)" },
+  { value: "tickets:uptime", label: "tickets:uptime (Uptime Kuma webhook)" },
   { value: "tickets:intake", label: "tickets:intake (website form, bound to one site, nothing else)" },
 ];
 

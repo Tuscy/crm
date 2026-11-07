@@ -67,8 +67,10 @@ export async function POST(request: NextRequest) {
 
     if (isIntake && caller.kind === "key") {
       // Public form: per-key ceiling, per-visitor limit, optional Turnstile.
-      // The site's server must forward the visitor's IP in x-forwarded-for.
-      const ip = getClientIp(request);
+      // The site's server forwards the visitor's IP in x-visitor-ip (Vercel overwrites
+      // x-forwarded-for, so that header would only ever show the site's server). The key
+      // holder is trusted, so this can't be spoofed by the public.
+      const ip = request.headers.get("x-visitor-ip")?.trim().slice(0, 64) || getClientIp(request);
       if (
         (await isOverRateLimit(caller.keyId, "intakeSite")) ||
         (await isOverRateLimit(`${caller.keyId}:${ip}`, "intake"))

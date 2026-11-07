@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import {
   addTicketMessageAction,
   changeTicketStatusAction,
+  emailFinalMessageAction,
   updateTicketAction,
 } from "@/lib/server/actions/tickets";
 import { STAFF_STATUS_LABELS } from "@/lib/tickets/status-labels";
@@ -185,5 +186,30 @@ export function DetailsForm({
         <Button type="button" onClick={save} disabled={pending}>{pending ? "Saving…" : "Save details"}</Button>
       </CardContent>
     </Card>
+  );
+}
+
+export function EmailFinalMessageButton({ id }: { id: string }) {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  async function send() {
+    if (!confirm("Email the final message to the client? It will be signed with your name.")) return;
+    setPending(true);
+    setNote(null);
+    const res = await emailFinalMessageAction(id);
+    setPending(false);
+    setNote(res.ok ? "Sent." : res.error);
+    if (res.ok) router.refresh();
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      <Button type="button" variant="outline" size="sm" onClick={send} disabled={pending}>
+        {pending ? "Sending…" : "Email final message to client"}
+      </Button>
+      {note ? <span className="text-sm text-muted-foreground">{note}</span> : null}
+    </div>
   );
 }
