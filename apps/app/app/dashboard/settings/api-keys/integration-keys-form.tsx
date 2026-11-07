@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
-import type { IntegrationKeyRow } from "@/lib/server/actions/integration-keys";
+import type { IntegrationKeyRow, KeySiteOption } from "@/lib/server/actions/integration-keys";
 import {
   createIntegrationKey,
   listIntegrationKeys,
@@ -31,12 +31,20 @@ const SCOPE_OPTIONS: { value: string; label: string }[] = [
   { value: "tasks:read", label: "tasks:read" },
   { value: "tasks:write", label: "tasks:write (create/update)" },
   { value: "tasks:delete", label: "tasks:delete" },
+  { value: "tickets:read", label: "tickets:read" },
+  { value: "tickets:write", label: "tickets:write (create/update, status)" },
+  { value: "tickets:agent", label: "tickets:agent (events/messages/status on tickets assigned to this key's label)" },
+  { value: "tickets:email", label: "tickets:email (inbound email forwarder)" },
+  { value: "tickets:uptime", label: "tickets:uptime (Uptime Kuma webhook)" },
+  { value: "tickets:intake", label: "tickets:intake (website form, bound to one site, nothing else)" },
 ];
 
 export function IntegrationKeysForm({
   initialKeys,
+  sites,
 }: {
   initialKeys: IntegrationKeyRow[];
+  sites: KeySiteOption[];
 }) {
   const [keys, setKeys] = useState(initialKeys);
   const [plainKey, setPlainKey] = useState<string | null>(null);
@@ -51,7 +59,8 @@ export function IntegrationKeysForm({
       raw.includes("*") || raw.length === 0 ? ["*"] : raw.filter(Boolean);
 
     try {
-      const created = await createIntegrationKey(name, scopes);
+      const siteId = ((formData.get("siteId") as string) || "").trim() || null;
+      const created = await createIntegrationKey(name, scopes, siteId);
       setPlainKey(created.plainKey);
       const next = await listIntegrationKeys();
       setKeys(next);
@@ -130,6 +139,25 @@ export function IntegrationKeysForm({
                   </label>
                 ))}
               </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Site (for tickets:intake keys only)</label>
+              <select
+                name="siteId"
+                defaultValue=""
+                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              >
+                <option value="">Not site-bound</option>
+                {sites.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ticket keys must list their scopes explicitly: &quot;Full access&quot; does not grant ticket access.
+                Agent keys act on tickets assigned to an agent with the same name as the label.
+              </p>
             </div>
             <SubmitCreate />
           </form>
