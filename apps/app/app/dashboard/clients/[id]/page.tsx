@@ -5,12 +5,7 @@ import { EditClientPackageForm } from "@/components/crm/edit-client-package-form
 import { SiteBuildsTab } from "@/components/crm/site-builds-tab";
 import { ClientInvoicesCard } from "@/components/xero/client-invoices-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
-
-const PACKAGE_LABELS: Record<string, string> = {
-  VOLTAGE: "Voltage",
-  CHARGE: "Charge",
-  GRID: "Grid",
-};
+import { packageLabel } from "@stky/crm";
 
 const SERVICE_LABELS: Record<string, string> = {
   BRANDING: "Branding",
@@ -54,7 +49,7 @@ export default async function ClientDetailPage({
             <h1 className="text-2xl font-bold">{client.name}</h1>
             {client.package ? (
               <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                {PACKAGE_LABELS[client.package] ?? client.package}
+                {packageLabel(client.package)}
               </span>
             ) : null}
           </div>

@@ -9,12 +9,7 @@ import { DeleteLeadButton } from "@/components/crm/delete-lead-button";
 import { LeadConversionForm } from "@/components/crm/lead-conversion-form";
 import { CreateTaskForm } from "@/components/crm/create-task-form";
 import { DeleteTaskButton } from "@/components/crm/delete-task-button";
-
-const PACKAGE_LABELS: Record<string, string> = {
-  VOLTAGE: "Voltage",
-  CHARGE: "Charge",
-  GRID: "Grid",
-};
+import { packageLabel } from "@stky/crm";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -148,7 +143,7 @@ export default async function LeadDetailPage({
             <p className="text-sm text-muted-foreground mt-1">
               Conversion package:{" "}
               <span className="font-medium text-foreground">
-                {PACKAGE_LABELS[conversion.package] ?? conversion.package}
+                {packageLabel(conversion.package)}
               </span>
             </p>
           ) : null}
