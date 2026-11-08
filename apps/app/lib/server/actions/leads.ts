@@ -16,6 +16,9 @@ export type CreateLeadInput = {
   website?: string;
   source?: string;
   status?: string;
+  ownerId?: string;
+  nextAction?: string;
+  followUpDate?: Date;
 };
 
 export type UpdateLeadInput = {
@@ -26,6 +29,9 @@ export type UpdateLeadInput = {
   website?: string;
   source?: string;
   status?: string;
+  ownerId?: string | null;
+  nextAction?: string | null;
+  followUpDate?: Date | null;
 };
 
 export async function createLead(data: CreateLeadInput) {
@@ -43,6 +49,9 @@ export async function createLead(data: CreateLeadInput) {
       website: data.website,
       source: data.source,
       status,
+      ownerId: data.ownerId,
+      nextAction: data.nextAction?.trim() || undefined,
+      followUpDate: data.followUpDate,
     },
     include: { deals: true },
   });
@@ -91,6 +100,7 @@ export async function getLeadById(id: string) {
       deals: true,
       tasks: { include: { assignee: true } },
       notes: true,
+      owner: { select: { id: true, name: true, email: true } },
     },
   });
 }
@@ -117,6 +127,11 @@ export async function updateLead(id: string, data: UpdateLeadInput) {
       ...(data.website !== undefined && { website: data.website }),
       ...(data.source !== undefined && { source: data.source }),
       ...(data.status !== undefined && { status: data.status }),
+      ...(data.ownerId !== undefined && { ownerId: data.ownerId }),
+      ...(data.nextAction !== undefined && {
+        nextAction: data.nextAction?.trim() || null,
+      }),
+      ...(data.followUpDate !== undefined && { followUpDate: data.followUpDate }),
     },
     include: { deals: true, tasks: true, notes: true },
   });

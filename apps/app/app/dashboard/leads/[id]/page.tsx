@@ -147,6 +147,26 @@ export default async function LeadDetailPage({
               </span>
             </p>
           ) : null}
+          {lead.owner ? (
+            <p className="text-sm text-muted-foreground mt-1">
+              Owner: <span className="font-medium text-foreground">{lead.owner.name || lead.owner.email}</span>
+            </p>
+          ) : null}
+          {(lead as any).nextAction ? (
+            <p className="text-sm text-muted-foreground mt-1">
+              Next action: <span className="font-medium text-foreground">{(lead as any).nextAction}</span>
+            </p>
+          ) : null}
+          {(lead as any).followUpDate ? (
+            <p className={`text-sm mt-1 ${
+              new Date((lead as any).followUpDate) < new Date() 
+                ? "text-destructive font-medium" 
+                : "text-muted-foreground"
+            }`}>
+              Follow-up: {new Date((lead as any).followUpDate).toLocaleDateString("en-GB")}
+              {new Date((lead as any).followUpDate) < new Date() ? " (overdue)" : ""}
+            </p>
+          ) : null}
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" asChild>
@@ -244,7 +264,7 @@ export default async function LeadDetailPage({
           >
             ← Back to overview
           </Link>
-          <UpdateLeadForm lead={lead} />
+          <UpdateLeadForm lead={lead} staffUsers={staffUsers} />
         </div>
       )}
     </div>

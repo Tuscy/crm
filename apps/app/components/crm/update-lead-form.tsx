@@ -11,12 +11,30 @@ import type { Lead } from "@stky/db";
 const inputClass =
   "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 
-export function UpdateLeadForm({ lead }: { lead: Lead }) {
+type LeadWithOwner = Lead & {
+  owner?: { id: string; name: string | null; email: string } | null;
+};
+
+type StaffUser = {
+  id: string;
+  name: string | null;
+  email: string;
+};
+
+export function UpdateLeadForm({
+  lead,
+  staffUsers = [],
+}: {
+  lead: LeadWithOwner;
+  staffUsers?: StaffUser[];
+}) {
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setPending(true);
     try {
+      const ownerIdRaw = formData.get("ownerId") as string;
+      const followUpDateRaw = formData.get("followUpDate") as string;
       await updateLead(lead.id, {
         name: formData.get("name") as string,
         email: formData.get("email") as string,
@@ -28,6 +46,9 @@ export function UpdateLeadForm({ lead }: { lead: Lead }) {
           (formData.get("sourceCustom") as string) ?? ""
         ),
         status: (formData.get("status") as string) || undefined,
+        ownerId: ownerIdRaw || null,
+        nextAction: (formData.get("nextAction") as string) || null,
+        followUpDate: followUpDateRaw ? new Date(followUpDateRaw) : null,
       });
     } finally {
       setPending(false);
@@ -92,6 +113,44 @@ export function UpdateLeadForm({ lead }: { lead: Lead }) {
             <input
               name="status"
               defaultValue={lead.status}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Owner</label>
+            <select
+              name="ownerId"
+              className={inputClass}
+              defaultValue={lead.owner?.id ?? ""}
+            >
+              <option value="">Unassigned</option>
+              {staffUsers.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name || user.email}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Next action</label>
+            <textarea
+              name="nextAction"
+              rows={2}
+              defaultValue={(lead as any).nextAction ?? ""}
+              placeholder="e.g. Call to discuss requirements"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Follow-up date</label>
+            <input
+              name="followUpDate"
+              type="date"
+              defaultValue={
+                (lead as any).followUpDate
+                  ? new Date((lead as any).followUpDate).toISOString().slice(0, 10)
+                  : ""
+              }
               className={inputClass}
             />
           </div>

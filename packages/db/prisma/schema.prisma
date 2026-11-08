@@ -27,6 +27,7 @@ model User {
   sessions        Session[]
   memberships     Membership[]
   assignedTasks   Task[]        @relation("TaskAssignee")
+  ownedLeads      Lead[]        @relation("LeadOwner")
   activityLogs    ActivityLog[]
   auditLogs       AuditLog[]
   createdInvoices Invoice[]
@@ -85,20 +86,24 @@ model IntegrationApiKey {
 }
 
 model Lead {
-  id        String   @id @default(cuid())
-  name      String
-  email     String
-  phone     String?
-  company   String?
-  website   String?
-  source    String?
-  status    String   @default("NEW")
-  createdAt DateTime @default(now())
-  clientId  String?
-  siteId    String?
+  id           String    @id @default(cuid())
+  name         String
+  email        String
+  phone        String?
+  company      String?
+  website      String?
+  source       String?
+  status       String    @default("NEW")
+  createdAt    DateTime  @default(now())
+  clientId     String?
+  siteId       String?
+  ownerId      String?
+  nextAction   String?
+  followUpDate DateTime?
 
   client     Client?         @relation(fields: [clientId], references: [id])
   site       Site?           @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  owner      User?           @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   deals      Deal[]
   notes      Note[]
   tasks      Task[]
@@ -106,6 +111,7 @@ model Lead {
 
   @@index([status])
   @@index([source])
+  @@index([ownerId])
 }
 
 model LeadConversion {
