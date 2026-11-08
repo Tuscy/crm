@@ -192,6 +192,7 @@ model Client {
   billingCurrency      String?      @default("USD")
   billingNotes         String?
   xeroContactId        String? // set once mapped via Settings → Xero
+  sharepointFolderUrl  String? // URL to client's SharePoint document folder
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
   package              PackageType?

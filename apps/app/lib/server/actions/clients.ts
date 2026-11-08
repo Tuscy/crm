@@ -96,7 +96,16 @@ export async function getClientById(id: string) {
   return prisma.client.findUnique({
     where: { id },
     include: {
-      leads: true,
+      leads: {
+        include: {
+          tasks: {
+            include: {
+              lead: { select: { id: true, name: true } },
+            },
+            orderBy: { dueDate: "asc" },
+          },
+        },
+      },
       memberships: { include: { user: true } },
       googleAdsConnections: true,
       analyticsCredentials: true,

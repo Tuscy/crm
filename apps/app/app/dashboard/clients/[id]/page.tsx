@@ -6,6 +6,8 @@ import { SiteBuildsTab } from "@/components/crm/site-builds-tab";
 import { ClientInvoicesCard } from "@/components/xero/client-invoices-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import { packageLabel } from "@stky/crm";
+import { ClientTasksCard } from "@/components/crm/client-tasks-card";
+import { ClientDocumentsCard } from "@/components/crm/client-documents-card";
 
 const SERVICE_LABELS: Record<string, string> = {
   BRANDING: "Branding",
@@ -177,9 +179,21 @@ export default async function ClientDetailPage({
           )}
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <ClientTasksCard
+              tasks={client.leads.flatMap((lead) =>
+                lead.tasks.map((task) => ({
+                  id: task.id,
+                  title: task.title,
+                  completed: task.completed,
+                  dueDate: task.dueDate,
+                  leadId: task.leadId,
+                  lead: task.lead,
+                }))
+              )}
+            />
             <Card>
               <CardHeader>
-                <CardTitle>Leads</CardTitle>
+                <CardTitle className="text-base">Leads</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
@@ -188,9 +202,12 @@ export default async function ClientDetailPage({
                 </p>
               </CardContent>
             </Card>
+            <ClientDocumentsCard
+              sharepointFolderUrl={(client as any).sharepointFolderUrl}
+            />
             <Card>
               <CardHeader>
-                <CardTitle>Portal users</CardTitle>
+                <CardTitle className="text-base">Portal users</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
