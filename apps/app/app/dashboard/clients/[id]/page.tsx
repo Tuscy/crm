@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import { packageLabel } from "@stky/crm";
 import { ClientTasksCard } from "@/components/crm/client-tasks-card";
 import { ClientDocumentsCard } from "@/components/crm/client-documents-card";
+import { formatDateUK } from "@/lib/format";
 
 const SERVICE_LABELS: Record<string, string> = {
   BRANDING: "Branding",
@@ -355,7 +356,7 @@ export default async function ClientDetailPage({
                           {log.actor.name ?? log.actor.email}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(log.createdAt).toLocaleString()}
+                          {formatDateUK(log.createdAt)} {new Date(log.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
                       {log.body ? (
