@@ -1,29 +1,47 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import crypto from "crypto";
 
-const mockPrisma = {
-  gBPDraft: {
-    create: vi.fn(),
-    update: vi.fn(),
-    findUnique: vi.fn(),
+vi.mock("@stky/db", () => ({
+  prisma: {
+    gBPDraft: {
+      create: vi.fn(),
+      update: vi.fn(),
+      findUnique: vi.fn(),
+    },
+    activityLog: {
+      create: vi.fn(),
+    },
   },
-};
-
-const mockAuth = vi.fn();
-const mockRequirePermission = vi.fn();
-
-vi.mock("@stky/db", () => ({ prisma: mockPrisma }));
-vi.mock("@/auth", () => ({ auth: mockAuth }));
-vi.mock("@/lib/server/guard", () => ({
-  requirePermission: mockRequirePermission,
 }));
+
+vi.mock("@/auth", () => ({
+  auth: vi.fn(),
+}));
+
+vi.mock("@/lib/server/guard", () => ({
+  requirePermission: vi.fn(),
+}));
+
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-const { updateGBPDraft, approveGBPDraft, mockPostGBPDraft } = await import(
-  "../gbp-drafts"
-);
+import { updateGBPDraft, approveGBPDraft, mockPostGBPDraft } from "../gbp-drafts";
+import { prisma } from "@stky/db";
+import { auth } from "@/auth";
+import { requirePermission } from "@/lib/server/guard";
+
+const mockPrisma = prisma as unknown as {
+  gBPDraft: {
+    create: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    findUnique: ReturnType<typeof vi.fn>;
+  };
+  activityLog: { create: ReturnType<typeof vi.fn> };
+};
+
+const mockAuth = auth as unknown as ReturnType<typeof vi.fn>;
+const mockRequirePermission = requirePermission as unknown as ReturnType<typeof vi.fn>;
 
 describe("GBP Draft Workflow", () => {
   beforeEach(() => {

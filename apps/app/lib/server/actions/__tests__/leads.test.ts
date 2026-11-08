@@ -1,31 +1,50 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock Prisma and auth
-const mockPrisma = {
-  lead: {
-    create: vi.fn(),
-    update: vi.fn(),
-    findUnique: vi.fn(),
+vi.mock("@stky/db", () => ({
+  prisma: {
+    lead: {
+      create: vi.fn(),
+      update: vi.fn(),
+      findUnique: vi.fn(),
+    },
+    user: {
+      findUnique: vi.fn(),
+    },
+    activityLog: {
+      create: vi.fn(),
+    },
   },
-  user: {
-    findUnique: vi.fn(),
-  },
-};
-
-const mockAuth = vi.fn();
-const mockRequirePermission = vi.fn();
-
-vi.mock("@stky/db", () => ({ prisma: mockPrisma }));
-vi.mock("@/auth", () => ({ auth: mockAuth }));
-vi.mock("@/lib/server/guard", () => ({
-  requirePermission: mockRequirePermission,
 }));
+
+vi.mock("@/auth", () => ({
+  auth: vi.fn(),
+}));
+
+vi.mock("@/lib/server/guard", () => ({
+  requirePermission: vi.fn(),
+}));
+
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-// Import after mocks
-const { createLead, updateLead } = await import("../leads");
+import { createLead, updateLead } from "../leads";
+import { prisma } from "@stky/db";
+import { auth } from "@/auth";
+import { requirePermission } from "@/lib/server/guard";
+
+const mockPrisma = prisma as unknown as {
+  lead: {
+    create: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    findUnique: ReturnType<typeof vi.fn>;
+  };
+  user: { findUnique: ReturnType<typeof vi.fn> };
+  activityLog: { create: ReturnType<typeof vi.fn> };
+};
+
+const mockAuth = auth as unknown as ReturnType<typeof vi.fn>;
+const mockRequirePermission = requirePermission as unknown as ReturnType<typeof vi.fn>;
 
 describe("Lead Management", () => {
   beforeEach(() => {
