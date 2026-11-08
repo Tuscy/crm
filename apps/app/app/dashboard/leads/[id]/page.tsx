@@ -11,6 +11,7 @@ import { CreateTaskForm } from "@/components/crm/create-task-form";
 import { DeleteTaskButton } from "@/components/crm/delete-task-button";
 import { DealToClientConversion } from "@/components/crm/deal-to-client-conversion";
 import { packageLabel } from "@stky/crm";
+import { formatDateUK } from "@/lib/format";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -164,7 +165,7 @@ export default async function LeadDetailPage({
                 ? "text-destructive font-medium" 
                 : "text-muted-foreground"
             }`}>
-              Follow-up: {new Date((lead as any).followUpDate).toLocaleDateString("en-GB")}
+              Follow-up: {formatDateUK((lead as any).followUpDate)}
               {new Date((lead as any).followUpDate) < new Date() ? " (overdue)" : ""}
             </p>
           ) : null}
@@ -254,7 +255,7 @@ export default async function LeadDetailPage({
                       <div className="flex items-center gap-2">
                         {t.dueDate && (
                           <span className="text-muted-foreground text-xs">
-                            {new Date(t.dueDate).toLocaleDateString()}
+                            {formatDateUK(t.dueDate)}
                           </span>
                         )}
                         <DeleteTaskButton taskId={t.id} />

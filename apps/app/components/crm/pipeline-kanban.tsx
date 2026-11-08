@@ -99,7 +99,7 @@ function PipelineCard({ deal }: { deal: DealWithLead }) {
         )}
         {deal.value != null && (
           <p className="font-medium text-foreground mt-1">
-            ${deal.value.toLocaleString()}
+            £{deal.value.toLocaleString("en-GB")}
           </p>
         )}
       </CardContent>
