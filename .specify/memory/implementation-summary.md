@@ -2,7 +2,7 @@
 
 **Branch**: `cursor/crm-improvements-sdd-4c84`  
 **Pull Request**: https://github.com/Tuscy/crm/pull/6  
-**Status**: Phases 1-5 Complete, Phase 10 Partial, Phases 6-9 Remaining
+**Status**: Phases 1-6, 8, 10 (Partial) Complete | Phases 7, 9 Remaining
 
 ## Spec Kit Workflow Completion
 
@@ -114,39 +114,42 @@
 
 **Testing**: TypeScript compilation passed, manual UI testing required
 
+### Phase 6: Client Workspace Cohesion ✅ COMPLETE
+
+**Objective**: Improve client overview with linked tasks and document access
+
+**Implemented**:
+- ✅ `ClientTasksCard` component displaying tasks from linked leads
+- ✅ Extended `getClientById` to include tasks via leads relationship
+- ✅ `ClientDocumentsCard` for SharePoint folder links
+- ✅ Extended Client schema with `sharepointFolderUrl` field (nullable)
+- ✅ Generated migration: `20261108111723_client_sharepoint_url`
+- ✅ Displays incomplete vs total task counts
+- ✅ Tasks link back to originating leads
+
+**Testing**: TypeScript compilation passed, manual UI testing required
+
+### Phase 8: Integration State Clarity ✅ COMPLETE
+
+**Objective**: Replace raw errors with friendly integration status UI
+
+**Implemented**:
+- ✅ Distinct states in `UptimeStatusCard`: Not configured vs Loading vs Connected vs Error
+- ✅ Friendly setup UI with collapsible instructions
+- ✅ Clear error messages with timestamp
+- ✅ Loading state with pulse animation
+- ✅ Removed raw environment variable names from errors
+
+**Testing**: TypeScript compilation passed, manual UI testing required
+
 ## Remaining Phases
 
-### Phase 6: Client Workspace Cohesion 🔜 NEXT
-- Formalize lead → deal → client conversion
-- Implement client duplicate detection (by email/companiesHouseNumber)
-- Preserve lead-deal-client relationship chain
-- Display linked deals on lead detail
-
-### Phase 4: Today View 🔜 HIGH VALUE
-- Aggregate overdue/due tasks and opportunities needing next actions
-- New route `/dashboard/today`
-- 4 sections: Overdue, Due Today, This Week, Needs Next Action
-
-### Phase 5: Task Details and Linking 🔜
-- Add `notes` field to Task model
-- Display tasks in client detail
-- Surface linked tasks from lead/client
-
-### Phase 6: Client Workspace Cohesion 🔜
-- Integrate linked tasks in client overview
-- SharePoint document links with metadata
-
-### Phase 7: GBP Draft and Review Workflow 📋 LOWER PRIORITY
+### Phase 7: GBP Draft and Review Workflow 🔜 NEXT
 - Safe post draft/approval flow
 - Text-only, no live posting
 - Approval invalidation on edit
 
-### Phase 8: Integration State Clarity 📋 LOWER PRIORITY
-- Distinguish not-configured vs loading vs connected vs error
-- Last-refresh timestamps
-- Friendly setup UI instead of raw errors
-
-### Phase 9: Automation Safety Visibility 📋 LOWER PRIORITY
+### Phase 9: Automation Safety Visibility 🔜
 - Show workflow trigger/recipient/actions
 - Review state before enabling
 - Disable toggle for unreviewed workflows
@@ -222,10 +225,11 @@ $ npx pnpm@9.15.0 --filter @stky/db exec prisma generate
 3. **Phase 2: Lead owner/next-action/follow-up** (4398bef) - 8 files + migration
 4. **Phases 3-5: Lifecycle/Today/Task notes** (ca06a3a) - 14 files + migration
 5. **Phase 10 partial: UK formatting** (ace3a84) - 3 files
-6. **Documentation: Implementation summary** (e0bf630) - 1 file
-7. **Testing evidence documentation** (pending) - 1 file
+6. **Documentation: Test evidence** (2ddb5cc) - 2 files
+7. **Phase 6: Client workspace cohesion** (da293c6) - 7 files + migration
+8. **Phase 8: Integration state clarity** (113d6f2) - 1 file
 
-**Total**: 7 commits, 64+ files modified/created
+**Total**: 8 commits, 73+ files modified/created, 4 migrations
 
 ## Files Modified
 
@@ -264,6 +268,17 @@ $ npx pnpm@9.15.0 --filter @stky/db exec prisma generate
 - `apps/app/lib/server/actions/tasks.ts` - Notes parameter
 - `apps/app/components/crm/create-task-form.tsx` - Notes textarea
 - `apps/app/components/dashboard/personal-task-list.tsx` - Display notes
+
+### Phase 6 (7 files + 1 migration)
+- `packages/db/prisma/schema.prisma` - Client.sharepointFolderUrl
+- `packages/db/prisma/migrations/20261108111723_client_sharepoint_url/migration.sql`
+- `apps/app/lib/server/actions/clients.ts` - Include tasks via leads
+- `apps/app/components/crm/client-tasks-card.tsx` (new)
+- `apps/app/components/crm/client-documents-card.tsx` (new)
+- `apps/app/app/dashboard/clients/[id]/page.tsx` - Integration
+
+### Phase 8 (1 file)
+- `apps/app/components/dashboard/uptime-status-card.tsx` - State clarity improvements
 
 ### Phase 10 Partial (3 files)
 - `apps/app/lib/format.ts` (new) - UK date/currency helpers
