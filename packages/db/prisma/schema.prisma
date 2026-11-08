@@ -32,6 +32,8 @@ model User {
   auditLogs       AuditLog[]
   createdInvoices Invoice[]
   siteBuilds      SiteBuild[]
+  gbpDraftsCreated  GBPDraft[]  @relation("GBPDraftCreator")
+  gbpDraftsApproved GBPDraft[]  @relation("GBPDraftApprover")
 }
 
 // Auth.js — forward-compatible (OAuth / database sessions); staff currently uses JWT + Credentials
@@ -207,6 +209,7 @@ model Client {
   googleAdsConnections GoogleAdsConnection[]
   siteBuilds           SiteBuild[]
   gbpPosts             GBPPost[]
+  gbpDrafts            GBPDraft[]
 
   @@index([xeroContactId])
 }
@@ -365,6 +368,26 @@ model ClientService {
   startedAt DateTime    @default(now())
 
   @@index([clientId])
+}
+
+model GBPDraft {
+  id            String    @id @default(cuid())
+  clientId      String
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  content       String
+  status        String    @default("DRAFT") // DRAFT, APPROVED, POSTED_MOCK
+  createdById   String
+  createdBy     User      @relation("GBPDraftCreator", fields: [createdById], references: [id])
+  approvedById  String?
+  approvedBy    User?     @relation("GBPDraftApprover", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  contentHash   String?   // Hash to detect edits after approval
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([clientId])
+  @@index([createdById])
+  @@index([status])
 }
 
 model ActivityLog {
