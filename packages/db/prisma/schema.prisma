@@ -147,6 +147,7 @@ model Task {
   completed   Boolean   @default(false)
   leadId      String?
   assigneeId  String?
+  notes       String?
   lead        Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   assignee    User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
 

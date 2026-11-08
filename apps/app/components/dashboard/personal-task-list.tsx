@@ -17,6 +17,7 @@ type PersonalTask = {
   completed: boolean;
   leadId: string | null;
   lead: { id: string; name: string } | null;
+  notes: string | null;
 };
 
 export function PersonalTaskList({ tasks }: { tasks: PersonalTask[] }) {
@@ -163,11 +164,14 @@ export function PersonalTaskList({ tasks }: { tasks: PersonalTask[] }) {
                           </Link>
                         ) : null}
                       </div>
-                      {task.dueDate ? (
-                        <span className="text-xs text-muted-foreground">
-                          Due {new Date(task.dueDate).toLocaleDateString()}
-                        </span>
-                      ) : null}
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        {task.dueDate ? (
+                          <div>Due {new Date(task.dueDate).toLocaleDateString("en-GB")}</div>
+                        ) : null}
+                        {task.notes ? (
+                          <div className="text-muted-foreground/80">{task.notes}</div>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                   {canDelete && (

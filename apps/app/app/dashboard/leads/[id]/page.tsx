@@ -9,6 +9,7 @@ import { DeleteLeadButton } from "@/components/crm/delete-lead-button";
 import { LeadConversionForm } from "@/components/crm/lead-conversion-form";
 import { CreateTaskForm } from "@/components/crm/create-task-form";
 import { DeleteTaskButton } from "@/components/crm/delete-task-button";
+import { DealToClientConversion } from "@/components/crm/deal-to-client-conversion";
 import { packageLabel } from "@stky/crm";
 
 const TABS = [
@@ -204,6 +205,21 @@ export default async function LeadDetailPage({
       {/* Tab content */}
       {activeTab === "overview" && (
         <>
+          {/* Show conversion UI for won deals */}
+          {lead.deals.some((d) => d.stage === "WON") && (
+            <DealToClientConversion
+              deal={{
+                ...lead.deals.find((d) => d.stage === "WON")!,
+                lead: {
+                  id: lead.id,
+                  name: lead.name,
+                  email: lead.email,
+                  company: lead.company,
+                  clientId: lead.clientId,
+                },
+              }}
+            />
+          )}
           <LeadActivity lead={lead} />
           <Card>
             <CardHeader>
