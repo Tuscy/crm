@@ -48,8 +48,8 @@ describe("Lead Management", () => {
       const result = await createLead({
         name: "Test Lead",
         email: "test@example.com",
-        phone: null,
-        company: null,
+        phone: undefined,
+        company: undefined,
         source: "REFERRAL",
         ownerId: "user-2",
         nextAction: "Send proposal",
@@ -88,8 +88,8 @@ describe("Lead Management", () => {
       const result = await createLead({
         name: "Test Lead 2",
         email: "test2@example.com",
-        phone: null,
-        company: null,
+        phone: undefined,
+        company: undefined,
         source: "REFERRAL",
       });
 
@@ -111,8 +111,8 @@ describe("Lead Management", () => {
         createLead({
           name: "Test",
           email: "test@example.com",
-          phone: null,
-          company: null,
+          phone: undefined,
+          company: undefined,
           source: "REFERRAL",
         })
       ).rejects.toThrow("Permission denied");

@@ -9,6 +9,7 @@ import {
   type N8nWorkflowSummary,
 } from "@/lib/n8n/client";
 import { requirePermission } from "@/lib/server/guard";
+import { canEnableWorkflow } from "@/lib/automation-review-metadata";
 
 export async function getAutomationsWorkflows(): Promise<{
   configured: boolean;
@@ -41,6 +42,18 @@ export async function toggleN8nWorkflowActive(
     if (!n8nConfigured()) {
       return { ok: false, error: "n8n is not configured (N8N_BASE_URL / N8N_API_KEY)." };
     }
+
+    // FAIL CLOSED: Block enabling unknown/unreviewed workflows
+    if (active) {
+      const authorization = canEnableWorkflow(workflowId);
+      if (!authorization.allowed) {
+        return {
+          ok: false,
+          error: authorization.reason ?? "Workflow cannot be enabled",
+        };
+      }
+    }
+
     await setN8nWorkflowActive(workflowId, active);
     revalidatePath("/dashboard/automations");
     return { ok: true };

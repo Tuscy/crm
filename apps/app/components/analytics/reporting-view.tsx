@@ -6,6 +6,10 @@ import { Button } from "@stky/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import type { Ga4OverviewResult, Ga4PageRow } from "@/lib/analytics/ga4-api";
 import type { GscQueryRow, GscPageRow } from "@/lib/analytics/gsc-api";
+import {
+  ConnectionStateIndicator,
+  deriveConnectionState,
+} from "./connection-state-indicator";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -137,6 +141,7 @@ function PaidSection({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -174,6 +179,7 @@ function PaidSection({
         averageCpc: dash.summary?.averageCpc ?? 0,
         currency: dash.account?.currencyCode ?? "GBP",
       });
+      setLastRefresh(new Date());
     } catch {
       setError("Failed to load Paid data");
     } finally {
@@ -204,12 +210,23 @@ function PaidSection({
     ]);
   }
 
+  const connectionStatus = deriveConnectionState(
+    notConfigured,
+    loading,
+    error,
+    !!data,
+    lastRefresh
+  );
+
   return (
     <SectionShell
       title="Paid Performance"
       onExport={data ? exportCsv : undefined}
       exportDisabled={!data}
     >
+      <div className="mb-4">
+        <ConnectionStateIndicator service="Google Ads" status={connectionStatus} />
+      </div>
       {loading && <Loading />}
       {!loading && notConfigured && (
         <p className="text-sm text-muted-foreground">

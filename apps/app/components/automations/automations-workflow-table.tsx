@@ -6,6 +6,10 @@ import Link from "next/link";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import { toggleN8nWorkflowActive } from "@/lib/server/actions/n8n-workflows";
 import type { N8nWorkflowSummary } from "@/lib/n8n/client";
+import {
+  getWorkflowMetadata,
+  type WorkflowMetadata,
+} from "@/lib/automation-review-metadata";
 
 type Props = {
   workflows: N8nWorkflowSummary[];
@@ -17,6 +21,65 @@ function editorUrl(base: string, workflowId: string): string {
   const origin = base.replace(/\/$/, "");
   if (!origin) return "#";
   return `${origin}/workflow/${encodeURIComponent(workflowId)}`;
+}
+
+function WorkflowMetadataDisplay({ workflowId }: { workflowId: string }) {
+  const metadata = getWorkflowMetadata(workflowId);
+
+  if (!metadata) {
+    return (
+      <div className="text-xs">
+        <span className="text-amber-700 dark:text-amber-400 font-medium">
+          ⚠️ Unknown
+        </span>
+        <p className="text-muted-foreground mt-1">
+          No review metadata. Cannot enable.
+        </p>
+      </div>
+    );
+  }
+
+  if (!metadata.reviewed) {
+    return (
+      <div className="text-xs">
+        <span className="text-amber-700 dark:text-amber-400 font-medium">
+          ⚠️ Unreviewed
+        </span>
+        <p className="text-muted-foreground mt-1">
+          Awaiting approval. Cannot enable.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="text-xs space-y-1">
+      <span className="text-green-700 dark:text-green-400 font-medium">
+        ✓ Reviewed
+      </span>
+      {metadata.trigger && (
+        <p className="text-muted-foreground">
+          <strong>Trigger:</strong> {metadata.trigger}
+        </p>
+      )}
+      {metadata.recipientScope && (
+        <p className="text-muted-foreground">
+          <strong>Recipients:</strong> {metadata.recipientScope}
+        </p>
+      )}
+      {metadata.actions && metadata.actions.length > 0 && (
+        <p className="text-muted-foreground">
+          <strong>Actions:</strong> {metadata.actions.join(", ")}
+        </p>
+      )}
+      {metadata.approvedBy && (
+        <p className="text-muted-foreground text-[10px]">
+          Approved by {metadata.approvedBy}
+          {metadata.approvedAt ? ` on ${new Date(metadata.approvedAt).toLocaleDateString("en-GB")}` : ""}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export function AutomationsWorkflowTable({ workflows, n8nBaseUrl }: Props) {
@@ -125,9 +188,7 @@ export function AutomationsWorkflowTable({ workflows, n8nBaseUrl }: Props) {
                 </td>
                 <td className="p-3 font-medium">{w.name}</td>
                 <td className="p-3">
-                  <span className="text-xs text-amber-700 dark:text-amber-400">
-                    ⚠️ Review in n8n before enabling
-                  </span>
+                  <WorkflowMetadataDisplay workflowId={w.id} />
                 </td>
                 <td className="p-3 text-muted-foreground text-xs">
                   {w.updatedAt
