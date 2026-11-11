@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { Button } from "@stky/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
-import { PIPELINE_STAGES, PIPELINE_STAGE_LABELS } from "@stky/crm";
+import {
+  PIPELINE_STAGES,
+  PIPELINE_STAGE_LABELS,
+  PACKAGE_DISPLAY_LABELS,
+} from "@stky/crm";
 import { createDeal } from "@/lib/server/actions/deals";
 
 const inputClass = "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
@@ -99,10 +103,10 @@ export function CreateDealForm({ leadId }: { leadId: string }) {
           <div>
             <label className={labelClass}>Package</label>
             <select name="packageType" className={inputClass} defaultValue="">
-              <option value="">None</option>
-              <option value="VOLTAGE">Voltage</option>
-              <option value="CHARGE">Charge</option>
-              <option value="GRID">Grid</option>
+              <option value="">{PACKAGE_DISPLAY_LABELS.NONE}</option>
+              <option value="VOLTAGE">{PACKAGE_DISPLAY_LABELS.VOLTAGE}</option>
+              <option value="CHARGE">{PACKAGE_DISPLAY_LABELS.CHARGE}</option>
+              <option value="GRID">{PACKAGE_DISPLAY_LABELS.GRID}</option>
             </select>
           </div>
           {error ? (

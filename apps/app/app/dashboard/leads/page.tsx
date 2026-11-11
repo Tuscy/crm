@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getLeads } from "@/lib/server/actions/leads";
+import { getStaffUsers } from "@/lib/server/actions/tasks";
 import { Button } from "@stky/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import { CreateLeadForm } from "@/components/crm/create-lead-form";
@@ -17,13 +18,16 @@ export default async function LeadsPage({
   const source =
     typeof searchParams.source === "string" ? searchParams.source : undefined;
 
-  const leads = await getLeads({ q, status, source });
+  const [leads, staffUsers] = await Promise.all([
+    getLeads({ q, status, source }),
+    getStaffUsers(),
+  ]);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-2xl font-bold">Leads</h1>
-        <CreateLeadForm />
+        <CreateLeadForm staffUsers={staffUsers} />
       </div>
 
       <LeadsFilters q={q} status={status} source={source} />

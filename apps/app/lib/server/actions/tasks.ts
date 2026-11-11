@@ -8,7 +8,7 @@ import { requirePermission } from "@/lib/server/guard";
 
 export async function createTask(
   title: string,
-  opts?: { leadId?: string; dueDate?: Date; assigneeId?: string }
+  opts?: { leadId?: string; dueDate?: Date; assigneeId?: string; notes?: string }
 ) {
   await requirePermission("task:create", { entity: "Task" });
   let assigneeId = opts?.assigneeId || null;
@@ -23,9 +23,11 @@ export async function createTask(
       title,
       dueDate: opts?.dueDate,
       assigneeId,
+      notes: opts?.notes?.trim() || null,
     },
   });
   revalidatePath("/dashboard/tasks");
+  revalidatePath("/dashboard/today");
   if (task.leadId) {
     revalidatePath(`/dashboard/leads/${task.leadId}`);
   }

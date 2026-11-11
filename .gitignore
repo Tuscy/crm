@@ -21,5 +21,8 @@ dist
 # Claude/Cursor
 .claude
 
+# Spec Kit
+.specify/
+
 # Legacy Code
 _legacy-pre-monorepo

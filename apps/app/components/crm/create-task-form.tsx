@@ -37,11 +37,13 @@ export function CreateTaskForm({
       if (!title) throw new Error("Title is required");
       const dueDateRaw = formData.get("dueDate") as string;
       const assigneeId = (formData.get("assigneeId") as string) || undefined;
+      const notes = (formData.get("notes") as string) || undefined;
 
       await createTask(title, {
         leadId,
         dueDate: dueDateRaw ? new Date(dueDateRaw) : undefined,
         assigneeId,
+        notes,
       });
       setOpen(false);
     } catch (e) {
@@ -81,6 +83,15 @@ export function CreateTaskForm({
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className={labelClass}>Notes (optional)</label>
+            <textarea
+              name="notes"
+              rows={2}
+              placeholder="Additional context or details"
+              className={inputClass}
+            />
           </div>
           {error ? (
             <p className="text-sm text-destructive" role="alert">

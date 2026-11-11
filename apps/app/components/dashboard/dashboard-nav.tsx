@@ -26,6 +26,12 @@ const NAV_ITEMS: NavItem[] = [
     label: "Dashboard",
     isActive: (pathname) => pathname === "/dashboard",
   },
+  {
+    type: "link",
+    href: "/dashboard/today",
+    label: "Today",
+    isActive: (pathname) => pathname === "/dashboard/today",
+  },
   { type: "heading", label: "Funnel" },
   {
     type: "link",
