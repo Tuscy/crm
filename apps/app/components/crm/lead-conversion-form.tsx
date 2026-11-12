@@ -5,12 +5,13 @@ import { Button } from "@stky/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import { upsertLeadConversion } from "@/lib/server/actions/lead-conversions";
 import type { LeadConversion } from "@stky/db";
+import { PACKAGE_DISPLAY_LABELS, type PackageType } from "@stky/crm";
 
 const PACKAGE_OPTIONS = [
-  { value: "", label: "None" },
-  { value: "VOLTAGE", label: "Voltage" },
-  { value: "CHARGE", label: "Charge" },
-  { value: "GRID", label: "Grid" },
+  { value: "", label: PACKAGE_DISPLAY_LABELS.NONE },
+  { value: "VOLTAGE", label: PACKAGE_DISPLAY_LABELS.VOLTAGE },
+  { value: "CHARGE", label: PACKAGE_DISPLAY_LABELS.CHARGE },
+  { value: "GRID", label: PACKAGE_DISPLAY_LABELS.GRID },
 ] as const;
 
 const inputClass =

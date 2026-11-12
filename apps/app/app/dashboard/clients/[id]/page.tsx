@@ -9,12 +9,10 @@ import { listTickets } from "@/lib/server/actions/tickets";
 import { currentStaffCan } from "@/lib/server/guard";
 import { Button } from "@stky/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
-
-const PACKAGE_LABELS: Record<string, string> = {
-  VOLTAGE: "Voltage",
-  CHARGE: "Charge",
-  GRID: "Grid",
-};
+import { packageLabel } from "@stky/crm";
+import { ClientTasksCard } from "@/components/crm/client-tasks-card";
+import { ClientDocumentsCard } from "@/components/crm/client-documents-card";
+import { formatDateUK } from "@/lib/format";
 
 const SERVICE_LABELS: Record<string, string> = {
   BRANDING: "Branding",
@@ -59,7 +57,7 @@ export default async function ClientDetailPage({
             <h1 className="text-2xl font-bold">{client.name}</h1>
             {client.package ? (
               <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                {PACKAGE_LABELS[client.package] ?? client.package}
+                {packageLabel(client.package)}
               </span>
             ) : null}
           </div>
@@ -190,9 +188,21 @@ export default async function ClientDetailPage({
           )}
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <ClientTasksCard
+              tasks={client.leads.flatMap((lead) =>
+                lead.tasks.map((task) => ({
+                  id: task.id,
+                  title: task.title,
+                  completed: task.completed,
+                  dueDate: task.dueDate,
+                  leadId: task.leadId,
+                  lead: task.lead,
+                }))
+              )}
+            />
             <Card>
               <CardHeader>
-                <CardTitle>Leads</CardTitle>
+                <CardTitle className="text-base">Leads</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
@@ -201,9 +211,12 @@ export default async function ClientDetailPage({
                 </p>
               </CardContent>
             </Card>
+            <ClientDocumentsCard
+              sharepointFolderUrl={(client as any).sharepointFolderUrl}
+            />
             <Card>
               <CardHeader>
-                <CardTitle>Portal users</CardTitle>
+                <CardTitle className="text-base">Portal users</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
@@ -351,7 +364,7 @@ export default async function ClientDetailPage({
                           {log.actor.name ?? log.actor.email}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(log.createdAt).toLocaleString()}
+                          {formatDateUK(log.createdAt)} {new Date(log.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
                       {log.body ? (

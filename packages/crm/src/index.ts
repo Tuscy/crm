@@ -88,3 +88,25 @@ export function resolveLeadSourceFromForm(
   }
   return trimmed;
 }
+
+/** Package type enum values stored in database */
+export type PackageType = "VOLTAGE" | "CHARGE" | "GRID";
+
+/** Display labels for package tiers */
+export const PACKAGE_DISPLAY_LABELS: Record<
+  PackageType | "NONE",
+  string
+> = {
+  NONE: "None",
+  VOLTAGE: "Minimum Stick",
+  CHARGE: "Extra Sticky",
+  GRID: "Totally Stuck",
+} as const;
+
+/** Get display label for a package type, handling null/undefined as "None" */
+export function packageLabel(
+  packageType: PackageType | null | undefined
+): string {
+  if (!packageType) return PACKAGE_DISPLAY_LABELS.NONE;
+  return PACKAGE_DISPLAY_LABELS[packageType] || packageType;
+}

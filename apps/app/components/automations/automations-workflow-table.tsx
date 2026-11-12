@@ -6,6 +6,10 @@ import Link from "next/link";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import { toggleN8nWorkflowActive } from "@/lib/server/actions/n8n-workflows";
 import type { N8nWorkflowSummary } from "@/lib/n8n/client";
+import {
+  getWorkflowMetadata,
+  type WorkflowMetadata,
+} from "@/lib/automation-review-metadata";
 
 type Props = {
   workflows: N8nWorkflowSummary[];
@@ -17,6 +21,65 @@ function editorUrl(base: string, workflowId: string): string {
   const origin = base.replace(/\/$/, "");
   if (!origin) return "#";
   return `${origin}/workflow/${encodeURIComponent(workflowId)}`;
+}
+
+function WorkflowMetadataDisplay({ workflowId }: { workflowId: string }) {
+  const metadata = getWorkflowMetadata(workflowId);
+
+  if (!metadata) {
+    return (
+      <div className="text-xs">
+        <span className="text-amber-700 dark:text-amber-400 font-medium">
+          ⚠️ Unknown
+        </span>
+        <p className="text-muted-foreground mt-1">
+          No review metadata. Cannot enable.
+        </p>
+      </div>
+    );
+  }
+
+  if (!metadata.reviewed) {
+    return (
+      <div className="text-xs">
+        <span className="text-amber-700 dark:text-amber-400 font-medium">
+          ⚠️ Unreviewed
+        </span>
+        <p className="text-muted-foreground mt-1">
+          Awaiting approval. Cannot enable.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="text-xs space-y-1">
+      <span className="text-green-700 dark:text-green-400 font-medium">
+        ✓ Reviewed
+      </span>
+      {metadata.trigger && (
+        <p className="text-muted-foreground">
+          <strong>Trigger:</strong> {metadata.trigger}
+        </p>
+      )}
+      {metadata.recipientScope && (
+        <p className="text-muted-foreground">
+          <strong>Recipients:</strong> {metadata.recipientScope}
+        </p>
+      )}
+      {metadata.actions && metadata.actions.length > 0 && (
+        <p className="text-muted-foreground">
+          <strong>Actions:</strong> {metadata.actions.join(", ")}
+        </p>
+      )}
+      {metadata.approvedBy && (
+        <p className="text-muted-foreground text-[10px]">
+          Approved by {metadata.approvedBy}
+          {metadata.approvedAt ? ` on ${new Date(metadata.approvedAt).toLocaleDateString("en-GB")}` : ""}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export function AutomationsWorkflowTable({ workflows, n8nBaseUrl }: Props) {
@@ -40,6 +103,23 @@ export function AutomationsWorkflowTable({ workflows, n8nBaseUrl }: Props) {
 
   async function onToggle(id: string, nextActive: boolean) {
     setError(null);
+    
+    // Safety gate for enabling workflows
+    if (nextActive) {
+      const workflow = localWorkflows.find((w) => w.id === id);
+      const confirmed = window.confirm(
+        `Enable workflow "${workflow?.name}"?\n\n` +
+        `⚠️  SAFETY CHECK:\n` +
+        `• This workflow will execute automatically when triggered\n` +
+        `• Review trigger conditions and actions in n8n before enabling\n` +
+        `• Verify recipient scope (all clients, specific clients, test mode)\n` +
+        `• Check for side effects (emails, API calls, database writes)\n` +
+        `• Ensure workflow has been tested with synthetic data\n\n` +
+        `Only enable workflows that have been reviewed and approved.`
+      );
+      if (!confirmed) return;
+    }
+
     const previous = localWorkflows;
     setLocalWorkflows((prev) =>
       prev.map((w) => (w.id === id ? { ...w, active: nextActive } : w))
@@ -82,8 +162,9 @@ export function AutomationsWorkflowTable({ workflows, n8nBaseUrl }: Props) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="text-left p-3 font-medium">Active</th>
+              <th className="text-left p-3 font-medium">Status</th>
               <th className="text-left p-3 font-medium">Name</th>
+              <th className="text-left p-3 font-medium">Safety Notes</th>
               <th className="text-left p-3 font-medium">Updated</th>
               <th className="text-right p-3 font-medium">Open</th>
             </tr>
@@ -98,15 +179,20 @@ export function AutomationsWorkflowTable({ workflows, n8nBaseUrl }: Props) {
                       className="h-4 w-4 rounded border-input"
                       checked={w.active}
                       disabled={pendingIds.has(w.id)}
-                      onChange={(e) => onToggle(w.id, e.target.checked)}
+                      onChange={(e) => void onToggle(w.id, e.target.checked)}
                     />
-                    <span className="sr-only">Toggle active</span>
+                    <span className={`text-xs font-medium ${w.active ? "text-green-700 dark:text-green-400" : "text-muted-foreground"}`}>
+                      {w.active ? "Active" : "Inactive"}
+                    </span>
                   </label>
                 </td>
                 <td className="p-3 font-medium">{w.name}</td>
-                <td className="p-3 text-muted-foreground">
+                <td className="p-3">
+                  <WorkflowMetadataDisplay workflowId={w.id} />
+                </td>
+                <td className="p-3 text-muted-foreground text-xs">
                   {w.updatedAt
-                    ? new Date(w.updatedAt).toLocaleString()
+                    ? new Date(w.updatedAt).toLocaleDateString("en-GB")
                     : "—"}
                 </td>
                 <td className="p-3 text-right">

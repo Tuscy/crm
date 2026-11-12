@@ -84,21 +84,52 @@ export function UptimeStatusCard() {
 
   const body = (() => {
     if (!snapshot) {
-      return <p className="text-sm text-muted-foreground">Checking...</p>;
+      return (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground animate-pulse" />
+          Loading status...
+        </div>
+      );
     }
     if (!snapshot.configured) {
       return (
-        <p className="text-sm text-muted-foreground">
-          Set <code>UPTIME_KUMA_BASE_URL</code> and{" "}
-          <code>UPTIME_KUMA_STATUS_SLUG</code> to show monitor status here.
-        </p>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            <strong>Not configured</strong>: Uptime monitoring is not set up yet.
+          </p>
+          <details className="text-xs text-muted-foreground">
+            <summary className="cursor-pointer hover:text-foreground">
+              Setup instructions
+            </summary>
+            <div className="mt-2 space-y-2 pl-3 border-l-2 border-border">
+              <p>Add these environment variables:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">UPTIME_KUMA_BASE_URL</code>: Your Uptime Kuma instance URL
+                </li>
+                <li>
+                  <code className="bg-muted px-1 py-0.5 rounded">UPTIME_KUMA_STATUS_SLUG</code>: Status page slug
+                </li>
+              </ul>
+              <p>Then restart the application.</p>
+            </div>
+          </details>
+        </div>
       );
     }
     if (!snapshot.reachable) {
       return (
-        <p className="text-sm text-destructive" role="alert">
-          Can&apos;t reach Uptime Kuma. {snapshot.error}
-        </p>
+        <div className="space-y-2">
+          <p className="text-sm text-destructive font-medium" role="alert">
+            Connection error
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Cannot reach Uptime Kuma: {snapshot.error}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Last check: {new Date().toLocaleString("en-GB")}
+          </p>
+        </div>
       );
     }
     if (snapshot.monitors.length === 0) {

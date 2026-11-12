@@ -16,13 +16,20 @@ import { LeadSourceFields } from "@/components/crm/lead-source-fields";
 const inputClass =
   "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 
-export function CreateLeadForm() {
+type StaffUser = {
+  id: string;
+  name: string | null;
+  email: string;
+};
+
+export function CreateLeadForm({ staffUsers = [] }: { staffUsers?: StaffUser[] }) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setPending(true);
     try {
+      const followUpDateRaw = formData.get("followUpDate") as string;
       await createLead({
         name: formData.get("name") as string,
         email: formData.get("email") as string,
@@ -34,6 +41,9 @@ export function CreateLeadForm() {
           (formData.get("sourceCustom") as string) ?? ""
         ),
         status: (formData.get("status") as string) || "NEW",
+        ownerId: (formData.get("ownerId") as string) || undefined,
+        nextAction: (formData.get("nextAction") as string) || undefined,
+        followUpDate: followUpDateRaw ? new Date(followUpDateRaw) : undefined,
       });
       setOpen(false);
     } finally {
@@ -79,6 +89,30 @@ export function CreateLeadForm() {
               defaultValue="NEW"
               className={inputClass}
             />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Owner (optional)</label>
+            <select name="ownerId" className={inputClass} defaultValue="">
+              <option value="">Unassigned</option>
+              {staffUsers.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name || user.email}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Next action (optional)</label>
+            <textarea
+              name="nextAction"
+              rows={2}
+              placeholder="e.g. Call to discuss requirements"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Follow-up date (optional)</label>
+            <input name="followUpDate" type="date" className={inputClass} />
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

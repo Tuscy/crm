@@ -9,12 +9,9 @@ import { DeleteLeadButton } from "@/components/crm/delete-lead-button";
 import { LeadConversionForm } from "@/components/crm/lead-conversion-form";
 import { CreateTaskForm } from "@/components/crm/create-task-form";
 import { DeleteTaskButton } from "@/components/crm/delete-task-button";
-
-const PACKAGE_LABELS: Record<string, string> = {
-  VOLTAGE: "Voltage",
-  CHARGE: "Charge",
-  GRID: "Grid",
-};
+import { DealToClientConversion } from "@/components/crm/deal-to-client-conversion";
+import { packageLabel } from "@stky/crm";
+import { formatDateUK } from "@/lib/format";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -148,8 +145,28 @@ export default async function LeadDetailPage({
             <p className="text-sm text-muted-foreground mt-1">
               Conversion package:{" "}
               <span className="font-medium text-foreground">
-                {PACKAGE_LABELS[conversion.package] ?? conversion.package}
+                {packageLabel(conversion.package)}
               </span>
+            </p>
+          ) : null}
+          {lead.owner ? (
+            <p className="text-sm text-muted-foreground mt-1">
+              Owner: <span className="font-medium text-foreground">{lead.owner.name || lead.owner.email}</span>
+            </p>
+          ) : null}
+          {(lead as any).nextAction ? (
+            <p className="text-sm text-muted-foreground mt-1">
+              Next action: <span className="font-medium text-foreground">{(lead as any).nextAction}</span>
+            </p>
+          ) : null}
+          {(lead as any).followUpDate ? (
+            <p className={`text-sm mt-1 ${
+              new Date((lead as any).followUpDate) < new Date() 
+                ? "text-destructive font-medium" 
+                : "text-muted-foreground"
+            }`}>
+              Follow-up: {formatDateUK((lead as any).followUpDate)}
+              {new Date((lead as any).followUpDate) < new Date() ? " (overdue)" : ""}
             </p>
           ) : null}
         </div>
@@ -189,6 +206,21 @@ export default async function LeadDetailPage({
       {/* Tab content */}
       {activeTab === "overview" && (
         <>
+          {/* Show conversion UI for won deals */}
+          {lead.deals.some((d) => d.stage === "WON") && (
+            <DealToClientConversion
+              deal={{
+                ...lead.deals.find((d) => d.stage === "WON")!,
+                lead: {
+                  id: lead.id,
+                  name: lead.name,
+                  email: lead.email,
+                  company: lead.company,
+                  clientId: lead.clientId,
+                },
+              }}
+            />
+          )}
           <LeadActivity lead={lead} />
           <Card>
             <CardHeader>
@@ -223,7 +255,7 @@ export default async function LeadDetailPage({
                       <div className="flex items-center gap-2">
                         {t.dueDate && (
                           <span className="text-muted-foreground text-xs">
-                            {new Date(t.dueDate).toLocaleDateString()}
+                            {formatDateUK(t.dueDate)}
                           </span>
                         )}
                         <DeleteTaskButton taskId={t.id} />
@@ -249,7 +281,7 @@ export default async function LeadDetailPage({
           >
             ← Back to overview
           </Link>
-          <UpdateLeadForm lead={lead} />
+          <UpdateLeadForm lead={lead} staffUsers={staffUsers} />
         </div>
       )}
     </div>

@@ -96,7 +96,16 @@ export async function getClientById(id: string) {
   return prisma.client.findUnique({
     where: { id },
     include: {
-      leads: true,
+      leads: {
+        include: {
+          tasks: {
+            include: {
+              lead: { select: { id: true, name: true } },
+            },
+            orderBy: { dueDate: "asc" },
+          },
+        },
+      },
       memberships: { include: { user: true } },
       googleAdsConnections: true,
       analyticsCredentials: true,
@@ -257,4 +266,103 @@ export async function updateClient(id: string, data: UpdateClientInput) {
   revalidatePath("/dashboard/clients");
   revalidatePath(`/dashboard/clients/${id}`);
   return client;
+}
+
+/**
+ * Find or create a client for a won deal.
+ * Prevents duplicate clients by checking email (case-insensitive) or companiesHouseNumber.
+ * If no match found, creates new client from lead/deal information.
+ */
+export async function findOrCreateClientFromDeal(dealId: string) {
+  await requirePermission("client:create", { entity: "Client" });
+  
+  const deal = await prisma.deal.findUnique({
+    where: { id: dealId },
+    include: {
+      lead: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          company: true,
+          clientId: true,
+        },
+      },
+    },
+  });
+
+  if (!deal || !deal.lead) {
+    throw new Error("Deal or associated lead not found");
+  }
+
+  // If lead already linked to client, return that client
+  if (deal.lead.clientId) {
+    return prisma.client.findUnique({ where: { id: deal.lead.clientId } });
+  }
+
+  const { lead } = deal;
+
+  // Check for existing client by email (case-insensitive)
+  const emailMatch = await prisma.client.findFirst({
+    where: {
+      primaryContactEmail: {
+        equals: lead.email.trim().toLowerCase(),
+        mode: "insensitive",
+      },
+    },
+  });
+
+  if (emailMatch) {
+    // Link lead to existing client
+    await prisma.lead.update({
+      where: { id: lead.id },
+      data: { clientId: emailMatch.id },
+    });
+    const session = await auth();
+    if (session?.user?.id) {
+      await logActivity({
+        clientId: emailMatch.id,
+        type: "LEAD_LINKED",
+        body: `Lead "${lead.name}" linked to existing client`,
+        actorId: session.user.id,
+      });
+    }
+    revalidatePath("/dashboard/clients");
+    revalidatePath(`/dashboard/clients/${emailMatch.id}`);
+    revalidatePath(`/dashboard/leads/${lead.id}`);
+    return emailMatch;
+  }
+
+  // No match found, create new client
+  const newClient = await prisma.client.create({
+    data: {
+      name: lead.company || lead.name,
+      companyName: lead.company || undefined,
+      primaryContactEmail: lead.email.trim().toLowerCase(),
+      contactPhone: lead.phone || undefined,
+      package: deal.packageType,
+      leads: {
+        connect: { id: lead.id },
+      },
+    },
+  });
+
+  const session = await auth();
+  if (session?.user?.id) {
+    await logActivity({
+      clientId: newClient.id,
+      type: "CLIENT_CREATED",
+      body: `Client created from won deal (Deal ${dealId})`,
+      actorId: session.user.id,
+    });
+  }
+
+  await enrolMatchingFlows("CLIENT_CREATED", { clientId: newClient.id });
+
+  revalidatePath("/dashboard/clients");
+  revalidatePath(`/dashboard/clients/${newClient.id}`);
+  revalidatePath(`/dashboard/leads/${lead.id}`);
+
+  return newClient;
 }

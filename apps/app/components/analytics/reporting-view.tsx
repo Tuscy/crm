@@ -6,6 +6,10 @@ import { Button } from "@stky/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import type { Ga4OverviewResult, Ga4PageRow } from "@/lib/analytics/ga4-api";
 import type { GscQueryRow, GscPageRow } from "@/lib/analytics/gsc-api";
+import {
+  ConnectionStateIndicator,
+  deriveConnectionState,
+} from "./connection-state-indicator";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -137,6 +141,7 @@ function PaidSection({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -174,6 +179,7 @@ function PaidSection({
         averageCpc: dash.summary?.averageCpc ?? 0,
         currency: dash.account?.currencyCode ?? "GBP",
       });
+      setLastRefresh(new Date());
     } catch {
       setError("Failed to load Paid data");
     } finally {
@@ -204,12 +210,23 @@ function PaidSection({
     ]);
   }
 
+  const connectionStatus = deriveConnectionState(
+    notConfigured,
+    loading,
+    error,
+    !!data,
+    lastRefresh
+  );
+
   return (
     <SectionShell
       title="Paid Performance"
       onExport={data ? exportCsv : undefined}
       exportDisabled={!data}
     >
+      <div className="mb-4">
+        <ConnectionStateIndicator service="Google Ads" status={connectionStatus} />
+      </div>
       {loading && <Loading />}
       {!loading && notConfigured && (
         <p className="text-sm text-muted-foreground">
@@ -249,6 +266,7 @@ function OrganicSection({
   const [error, setError] = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
   const [orgLevel, setOrgLevel] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -268,6 +286,7 @@ function OrganicSection({
       }
       setQueries(json.queries as GscQueryRow[]);
       setOrgLevel(Boolean(json.isOrgLevel));
+      setLastRefresh(new Date());
     } catch {
       setError("Failed to load Organic data");
     } finally {
@@ -292,6 +311,14 @@ function OrganicSection({
     ]);
   }
 
+  const connectionStatus = deriveConnectionState(
+    notConfigured,
+    loading,
+    error,
+    queries.length > 0,
+    lastRefresh
+  );
+
   return (
     <SectionShell
       title="Organic Search (Search Console)"
@@ -299,6 +326,9 @@ function OrganicSection({
       exportDisabled={queries.length === 0}
       orgLevel={orgLevel}
     >
+      <div className="mb-4">
+        <ConnectionStateIndicator service="Search Console" status={connectionStatus} />
+      </div>
       {loading && <Loading />}
       {!loading && notConfigured && (
         <NotConfigured service="Search Console" />
@@ -352,6 +382,7 @@ function TrafficSection({
   const [error, setError] = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
   const [orgLevel, setOrgLevel] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -382,6 +413,7 @@ function TrafficSection({
       setOverview(overData as Ga4OverviewResult);
       setOrgLevel(Boolean((overData as { isOrgLevel?: boolean }).isOrgLevel));
       setPages((pagesData.pages as Ga4PageRow[]) ?? []);
+      setLastRefresh(new Date());
     } catch {
       setError("Failed to load Traffic data");
     } finally {
@@ -408,6 +440,14 @@ function TrafficSection({
     downloadCsv("website-traffic.csv", rows);
   }
 
+  const connectionStatus = deriveConnectionState(
+    notConfigured,
+    loading,
+    error,
+    !!overview,
+    lastRefresh
+  );
+
   return (
     <SectionShell
       title="Website Traffic (GA4)"
@@ -415,6 +455,9 @@ function TrafficSection({
       exportDisabled={!overview}
       orgLevel={orgLevel}
     >
+      <div className="mb-4">
+        <ConnectionStateIndicator service="GA4" status={connectionStatus} />
+      </div>
       {loading && <Loading />}
       {!loading && notConfigured && <NotConfigured service="GA4" />}
       {!loading && error && <ErrorMsg msg={error} />}
