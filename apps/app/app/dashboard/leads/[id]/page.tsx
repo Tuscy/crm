@@ -224,6 +224,22 @@ export default async function LeadDetailPage({
       {/* Tab content */}
       {activeTab === "overview" && (
         <div className="space-y-6">
+          {/* Show conversion UI for won deals */}
+          {lead.deals.some((d) => d.stage === "WON") && (
+            <DealToClientConversion
+              deal={{
+                ...lead.deals.find((d) => d.stage === "WON")!,
+                lead: {
+                  id: lead.id,
+                  name: lead.name,
+                  email: lead.email,
+                  company: lead.company,
+                  clientId: lead.clientId,
+                },
+              }}
+            />
+          )}
+
           {/* Deals */}
           {lead.deals.length > 0 && (
             <Card>
@@ -247,9 +263,6 @@ export default async function LeadDetailPage({
                           </span>
                         ) : null}
                       </span>
-                      {d.stage === "WON" && (
-                        <DealToClientConversion dealId={d.id} leadName={lead.name} />
-                      )}
                     </li>
                   ))}
                 </ul>
