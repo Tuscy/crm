@@ -12,7 +12,7 @@ export async function POST(request: NextRequest, { params }: Ctx) {
   const caller = await requireTicketAuth(
     request,
     "POST /api/tickets/:id/messages",
-    [ApiScope.TICKETS_AGENT, ApiScope.TICKETS_WRITE],
+    [ApiScope.TICKETS_WRITE],
     "ticket:update"
   );
   if (!caller) return unauthorized();
@@ -24,10 +24,10 @@ export async function POST(request: NextRequest, { params }: Ctx) {
   try {
     const ticket = await prisma.ticket.findUnique({
       where: { id: id },
-      select: { id: true, assigneeType: true, assigneeId: true },
+      select: { id: true },
     });
     if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
-    if (!mayTouch(caller, ticket)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!mayTouch(caller)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const message = await addTicketMessage(ticket.id, actorFor(caller), {
       body: text,

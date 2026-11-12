@@ -8,8 +8,7 @@ import {
   TICKET_TYPES,
   actorFor,
   errorResponse,
-  isStaffOrAgent,
-  mayTouch,
+  isStaff,
   oneOf,
   readJson,
   str,
@@ -23,28 +22,24 @@ export async function GET(request: NextRequest, { params }: Ctx) {
   const caller = await requireTicketAuth(
     request,
     "GET /api/tickets/:id",
-    [ApiScope.TICKETS_READ, ApiScope.TICKETS_AGENT],
+    [ApiScope.TICKETS_READ],
     "ticket:read"
   );
   if (!caller) return unauthorized();
 
   try {
     const ticket = await prisma.ticket.findUnique({
-      where: { id: id },
+      where: { id },
       include: { client: { select: { id: true, name: true } } },
     });
     if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
-    if (!mayTouch(caller, ticket) && !(caller.kind === "key" && caller.scopes.includes("tickets:read"))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const full = isStaffOrAgent(caller);
+    const full = isStaff(caller);
     const messages = await prisma.ticketMessage.findMany({
       where: { ticketId: ticket.id, ...(full ? {} : { visibility: "PUBLIC" }) },
       orderBy: { createdAt: "asc" },
     });
 
-    // The activity log is for staff and agents only, and only when asked for.
+    // The activity log is for staff only, and only when asked for.
     const wantsLog = new URL(request.url).searchParams.get("include") === "log";
     const events =
       full && wantsLog
@@ -86,7 +81,6 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
         priority: oneOf(TICKET_PRIORITIES, body.priority),
         assigneeType: oneOf(["NONE", "HUMAN", "AGENT"] as const, body.assigneeType),
         assigneeId: body.assigneeId === null ? null : str(body.assigneeId, 200),
-        agentEligible: typeof body.agentEligible === "boolean" ? body.agentEligible : undefined,
         statusSummary: body.statusSummary === null ? null : str(body.statusSummary, 300),
         shareTechnicalDetails:
           typeof body.shareTechnicalDetails === "boolean" ? body.shareTechnicalDetails : undefined,

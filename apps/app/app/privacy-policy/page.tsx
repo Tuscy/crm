@@ -157,11 +157,8 @@ export default function PrivacyPolicyPage() {
             <p className="mt-3">
               Support requests: when you raise a request with us (through a website form, the client
               portal or email) we keep your name, email address and the details you give us so we can
-              reply and fix the problem. Some requests are sorted and drafted with the help of AI
-              tools, and a person reviews anything that is sent to you or published. We keep request
-              summaries and outcomes for as long as we work with you. Detailed technical logs from
-              automated tools are deleted after 12 months, and you can ask us to delete your requests
-              at any time.
+              reply and fix the problem. We keep request summaries and outcomes for as long as we
+              work with you, and you can ask us to delete your requests at any time.
             </p>
           </section>
 

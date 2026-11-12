@@ -77,7 +77,6 @@ export default async function TicketDetailPage({
             type={ticket.type}
             assigneeType={ticket.assigneeType}
             assigneeId={ticket.assigneeId}
-            agentEligible={ticket.agentEligible}
             shareTechnicalDetails={ticket.shareTechnicalDetails}
           />
         </div>

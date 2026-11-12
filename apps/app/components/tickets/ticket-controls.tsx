@@ -111,7 +111,6 @@ export function DetailsForm({
   type,
   assigneeType,
   assigneeId,
-  agentEligible,
   shareTechnicalDetails,
 }: {
   id: string;
@@ -119,13 +118,12 @@ export function DetailsForm({
   type: string;
   assigneeType: string;
   assigneeId: string | null;
-  agentEligible: boolean;
   shareTechnicalDetails: boolean;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [state, setState] = useState({ priority, type, assigneeType, assigneeId: assigneeId ?? "", agentEligible, shareTechnicalDetails });
+  const [state, setState] = useState({ priority, type, assigneeType, assigneeId: assigneeId ?? "", shareTechnicalDetails });
 
   async function save() {
     setPending(true);
@@ -134,9 +132,8 @@ export function DetailsForm({
       id,
       priority: state.priority,
       type: state.type,
-      assigneeType: state.assigneeType as "NONE" | "HUMAN" | "AGENT",
+      assigneeType: state.assigneeType as "NONE" | "HUMAN",
       assigneeId: state.assigneeType === "NONE" ? null : state.assigneeId || null,
-      agentEligible: state.agentEligible,
       shareTechnicalDetails: state.shareTechnicalDetails,
     });
     setPending(false);
@@ -166,20 +163,15 @@ export function DetailsForm({
             <select value={state.assigneeType} onChange={(e) => setState({ ...state, assigneeType: e.target.value })} className={field}>
               <option value="NONE">Unassigned</option>
               <option value="HUMAN">Human</option>
-              <option value="AGENT">Agent</option>
             </select>
           </div>
           {state.assigneeType !== "NONE" ? (
             <div>
-              <label className="font-medium">{state.assigneeType === "AGENT" ? "Agent name (matches its API key name)" : "Person"}</label>
+              <label className="font-medium">Person</label>
               <input value={state.assigneeId} onChange={(e) => setState({ ...state, assigneeId: e.target.value })} className={field} />
             </div>
           ) : null}
         </div>
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={state.agentEligible} onChange={(e) => setState({ ...state, agentEligible: e.target.checked })} />
-          Agent-eligible
-        </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={state.shareTechnicalDetails} onChange={(e) => setState({ ...state, shareTechnicalDetails: e.target.checked })} />
           Share technical details (activity log) with the client

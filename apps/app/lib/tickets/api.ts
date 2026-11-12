@@ -58,24 +58,16 @@ export async function readJson(request: Request): Promise<Record<string, unknown
 
 export function actorFor(caller: TicketCaller): TicketActor {
   if (caller.kind === "staff") return { type: "STAFF", name: caller.staff.email };
-  if (caller.scopes.includes("tickets:agent")) return { type: "AGENT", name: caller.name ?? "agent" };
   if (caller.scopes.includes("tickets:intake")) return { type: "CLIENT", name: null };
   return { type: "SYSTEM", name: caller.name ?? "system" };
 }
 
-/** Agent keys may only touch tickets assigned to that agent (by key name). */
-export function mayTouch(
-  caller: TicketCaller,
-  ticket: { assigneeType: string; assigneeId: string | null }
-): boolean {
-  if (caller.kind === "staff") return true;
-  if (caller.scopes.includes("tickets:write")) return true;
-  if (caller.scopes.includes("tickets:agent")) {
-    return ticket.assigneeType === "AGENT" && !!caller.name && ticket.assigneeId === caller.name;
-  }
-  return false;
+/** Staff sessions and tickets:write keys may act on any ticket. */
+export function mayTouch(caller: TicketCaller): boolean {
+  return caller.kind === "staff" || caller.scopes.includes("tickets:write");
 }
 
-export function isStaffOrAgent(caller: TicketCaller): boolean {
-  return caller.kind === "staff" || caller.scopes.includes("tickets:agent");
+/** Only staff see internal messages and the activity log. */
+export function isStaff(caller: TicketCaller): boolean {
+  return caller.kind === "staff";
 }

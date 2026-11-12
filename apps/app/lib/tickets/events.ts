@@ -9,7 +9,6 @@ import {
   type TicketStatusName,
 } from "./transitions";
 import { mirrorStatusChanged, mirrorTicketCreated } from "@/lib/slack/ticket-mirror";
-import { deliverMany, enqueueTicketWebhook } from "@/lib/webhooks/ticket-dispatch";
 
 /**
  * The only module that writes tickets. Every change appends a TicketEvent
@@ -18,14 +17,6 @@ import { deliverMany, enqueueTicketWebhook } from "@/lib/webhooks/ticket-dispatc
  */
 
 export { appendEvent, type TicketActor };
-
-export const AI_DISCLOSURE = "(Drafted with AI assistance.)";
-
-/** Anything an agent says to a customer carries the AI disclosure (constitution III). */
-export function withAiDisclosure(body: string, authorType: TicketActor["type"], visibility: "PUBLIC" | "INTERNAL"): string {
-  if (authorType !== "AGENT" || visibility !== "PUBLIC" || body.includes(AI_DISCLOSURE)) return body;
-  return `${body}\n\n${AI_DISCLOSURE}`;
-}
 
 export class TicketError extends Error {
   constructor(
@@ -47,7 +38,6 @@ export type CreateTicketInput = {
   requesterType: TicketActor["type"];
   requesterName?: string | null;
   requesterEmail?: string | null;
-  agentEligible?: boolean;
 };
 
 export async function createTicket(input: CreateTicketInput, actor: TicketActor) {
@@ -71,7 +61,7 @@ export async function createTicket(input: CreateTicketInput, actor: TicketActor)
     }
   }
 
-  const { ticket, deliveryId } = await prisma.$transaction(async (tx) => {
+  const ticket = await prisma.$transaction(async (tx) => {
     const reference = await nextTicketReference(tx);
     const created = await tx.ticket.create({
       data: {
@@ -86,7 +76,6 @@ export async function createTicket(input: CreateTicketInput, actor: TicketActor)
         requesterType: input.requesterType,
         requesterName: input.requesterName?.trim() || null,
         requesterEmail: input.requesterEmail?.trim() || null,
-        agentEligible: input.agentEligible ?? false,
         statusSummary: "Received",
       },
     });
@@ -96,16 +85,9 @@ export async function createTicket(input: CreateTicketInput, actor: TicketActor)
       actor,
       payload: { source: input.source, type: created.type, priority: created.priority },
     });
-    const deliveryId = await enqueueTicketWebhook(tx, {
-      ticket: created,
-      event: "ticket.created",
-      actor,
-      data: { source: input.source, title: created.title, description: created.description },
-    });
-    return { ticket: created, deliveryId };
+    return created;
   });
 
-  waitUntil(deliverMany([deliveryId]));
   waitUntil(
     mirrorTicketCreated({
       id: ticket.id,
@@ -123,7 +105,6 @@ export async function createTicket(input: CreateTicketInput, actor: TicketActor)
 export type TransitionOptions = {
   summary?: string | null;
   finalMessage?: string | null;
-  runId?: string | null;
 };
 
 /** Sole writer of Ticket.status. Returns the updated ticket and whether it was redirected to NEEDS_HUMAN. */
@@ -170,7 +151,6 @@ export async function transitionTicket(
 
     await appendEvent(tx, {
       ticketId,
-      runId: options.runId,
       kind: "status.changed",
       actor,
       payload: {
@@ -183,15 +163,7 @@ export async function transitionTicket(
       },
     });
 
-    const deliveryId = await enqueueTicketWebhook(tx, {
-      ticket: updated,
-      event: "ticket.status_changed",
-      actor,
-      data: { from, to: resolved.to, requested: to, redirected: resolved.redirected, summary: resolved.summary },
-    });
-
     return {
-      deliveryId,
       ticket: updated,
       from,
       redirected: resolved.redirected,
@@ -200,7 +172,6 @@ export async function transitionTicket(
     };
   });
 
-  waitUntil(deliverMany([result.deliveryId]));
   waitUntil(
     mirrorStatusChanged(
       {
@@ -231,15 +202,15 @@ export async function addTicketMessage(
     throw new TicketError("Clients cannot post internal messages", "FORBIDDEN");
   }
 
-  const { message, deliveryId } = await prisma.$transaction(async (tx) => {
-    const ticket = await tx.ticket.findUnique({ where: { id: ticketId } });
+  return prisma.$transaction(async (tx) => {
+    const ticket = await tx.ticket.findUnique({ where: { id: ticketId }, select: { id: true } });
     if (!ticket) throw new TicketError("Ticket not found", "NOT_FOUND");
     const message = await tx.ticketMessage.create({
       data: {
         ticketId,
         authorType: actor.type,
         authorName: actor.name ?? null,
-        body: withAiDisclosure(redactString(body), actor.type, visibility),
+        body: redactString(body),
         visibility,
       },
     });
@@ -249,20 +220,8 @@ export async function addTicketMessage(
       actor,
       payload: { messageId: message.id, visibility },
     });
-    // Internal notes never leave the CRM, so no webhook and no body in any payload.
-    const deliveryId =
-      visibility === "PUBLIC"
-        ? await enqueueTicketWebhook(tx, {
-            ticket,
-            event: "ticket.message_added",
-            actor,
-            data: { messageId: message.id, authorType: message.authorType, visibility, body: message.body },
-          })
-        : null;
-    return { message, deliveryId };
+    return message;
   });
-  waitUntil(deliverMany([deliveryId]));
-  return message;
 }
 
 export type UpdateTicketFields = {
@@ -272,7 +231,6 @@ export type UpdateTicketFields = {
   priority?: Prisma.TicketUpdateInput["priority"];
   assigneeType?: Prisma.TicketUpdateInput["assigneeType"];
   assigneeId?: string | null;
-  agentEligible?: boolean;
   statusSummary?: string | null;
   shareTechnicalDetails?: boolean;
 };
@@ -283,7 +241,7 @@ export async function updateTicketFields(
   fields: UpdateTicketFields,
   actor: TicketActor
 ) {
-  const result = await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const existing = await tx.ticket.findUnique({ where: { id: ticketId } });
     if (!existing) throw new TicketError("Ticket not found", "NOT_FOUND");
 
@@ -303,7 +261,6 @@ export async function updateTicketFields(
     set("priority", fields.priority);
     set("assigneeType", fields.assigneeType);
     set("assigneeId", fields.assigneeId);
-    set("agentEligible", fields.agentEligible);
     set(
       "statusSummary",
       fields.statusSummary === undefined
@@ -314,7 +271,7 @@ export async function updateTicketFields(
     );
     set("shareTechnicalDetails", fields.shareTechnicalDetails);
 
-    if (changed.length === 0) return { updated: existing, deliveryId: null };
+    if (changed.length === 0) return existing;
 
     const updated = await tx.ticket.update({ where: { id: ticketId }, data });
     await appendEvent(tx, {
@@ -323,18 +280,6 @@ export async function updateTicketFields(
       actor,
       payload: { fields: changed },
     });
-    const assignmentChanged =
-      updated.assigneeType !== existing.assigneeType || updated.assigneeId !== existing.assigneeId;
-    const deliveryId = assignmentChanged
-      ? await enqueueTicketWebhook(tx, {
-          ticket: updated,
-          event: "ticket.assigned",
-          actor,
-          data: { assigneeType: updated.assigneeType, assigneeId: updated.assigneeId },
-        })
-      : null;
-    return { updated, deliveryId };
+    return updated;
   });
-  waitUntil(deliverMany([result.deliveryId]));
-  return result.updated;
 }

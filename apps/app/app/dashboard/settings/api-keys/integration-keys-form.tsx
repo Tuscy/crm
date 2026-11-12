@@ -33,7 +33,6 @@ const SCOPE_OPTIONS: { value: string; label: string }[] = [
   { value: "tasks:delete", label: "tasks:delete" },
   { value: "tickets:read", label: "tickets:read" },
   { value: "tickets:write", label: "tickets:write (create/update, status)" },
-  { value: "tickets:agent", label: "tickets:agent (events/messages/status on tickets assigned to this key's label)" },
   { value: "tickets:email", label: "tickets:email (inbound email forwarder)" },
   { value: "tickets:uptime", label: "tickets:uptime (Uptime Kuma webhook)" },
   { value: "tickets:intake", label: "tickets:intake (website form, bound to one site, nothing else)" },
@@ -156,7 +155,6 @@ export function IntegrationKeysForm({
               </select>
               <p className="mt-1 text-xs text-muted-foreground">
                 Ticket keys must list their scopes explicitly: &quot;Full access&quot; does not grant ticket access.
-                Agent keys act on tickets assigned to an agent with the same name as the label.
               </p>
             </div>
             <SubmitCreate />

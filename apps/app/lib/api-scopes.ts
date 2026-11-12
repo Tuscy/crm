@@ -15,7 +15,6 @@ export const ApiScope = {
   TASKS_DELETE: "tasks:delete",
   TICKETS_READ: "tickets:read",
   TICKETS_WRITE: "tickets:write",
-  TICKETS_AGENT: "tickets:agent",
   TICKETS_INTAKE: "tickets:intake",
   TICKETS_EMAIL: "tickets:email",
   TICKETS_UPTIME: "tickets:uptime",

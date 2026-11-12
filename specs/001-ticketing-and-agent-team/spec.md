@@ -2,7 +2,7 @@
 
 **Feature Branch**: `claude/ticketing-plan` (implementation branches per phase: `claude/ticketing-phase-N`)
 **Created**: 2026-11-07
-**Status**: Draft for review (planned, nothing built)
+**Status**: Ticket system built (12 Nov 2026). Agent and workflow automation (user stories 2 and 4 to 6, and FR-007, FR-011, FR-014) deferred; see tasks.md.
 **Input**: Rhyse's draft, "Ticketing system and agent team plan", 7 Nov 2026.
 
 Goal: staff, agents and clients can raise tickets, and an agent team picks up the suitable ones through a webhook-driven workflow. Every run is logged in full, but people see a clean status and a final message by default.

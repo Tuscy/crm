@@ -1,9 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "turbo build --filter=@stky/app...",
-  "crons": [
-    { "path": "/api/cron/webhook-retries", "schedule": "* * * * *" },
-    { "path": "/api/cron/ticket-maintenance", "schedule": "17 3 * * *" }
-  ]
+  "buildCommand": "turbo build --filter=@stky/app..."
 }

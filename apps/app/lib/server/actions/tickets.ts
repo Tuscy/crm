@@ -149,9 +149,8 @@ export async function updateTicketAction(input: {
   id: string;
   type?: string;
   priority?: string;
-  assigneeType?: "NONE" | "HUMAN" | "AGENT";
+  assigneeType?: "NONE" | "HUMAN";
   assigneeId?: string | null;
-  agentEligible?: boolean;
   statusSummary?: string | null;
   shareTechnicalDetails?: boolean;
 }): Promise<Result> {
@@ -164,7 +163,6 @@ export async function updateTicketAction(input: {
         priority: oneOf(TICKET_PRIORITIES, input.priority),
         assigneeType: input.assigneeType,
         assigneeId: input.assigneeId,
-        agentEligible: input.agentEligible,
         statusSummary: input.statusSummary,
         shareTechnicalDetails: input.shareTechnicalDetails,
       },
