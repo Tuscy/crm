@@ -149,26 +149,6 @@ export default async function LeadDetailPage({
               </span>
             </p>
           ) : null}
-          {lead.owner ? (
-            <p className="text-sm text-muted-foreground mt-1">
-              Owner: <span className="font-medium text-foreground">{lead.owner.name || lead.owner.email}</span>
-            </p>
-          ) : null}
-          {(lead as any).nextAction ? (
-            <p className="text-sm text-muted-foreground mt-1">
-              Next action: <span className="font-medium text-foreground">{(lead as any).nextAction}</span>
-            </p>
-          ) : null}
-          {(lead as any).followUpDate ? (
-            <p className={`text-sm mt-1 ${
-              new Date((lead as any).followUpDate) < new Date() 
-                ? "text-destructive font-medium" 
-                : "text-muted-foreground"
-            }`}>
-              Follow-up: {formatDateUK((lead as any).followUpDate)}
-              {new Date((lead as any).followUpDate) < new Date() ? " (overdue)" : ""}
-            </p>
-          ) : null}
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" asChild>
@@ -178,7 +158,45 @@ export default async function LeadDetailPage({
         </div>
       </div>
 
-      {/* Tab bar */}
+      {/* Owner, Next Action, Follow-up */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Assignment & Follow-up</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <span className="text-sm font-medium">Owner</span>
+            <p className="text-sm text-muted-foreground">
+              {lead.owner ? lead.owner.name || lead.owner.email : "Not set"}
+            </p>
+          </div>
+          <div>
+            <span className="text-sm font-medium">Next action</span>
+            <p className="text-sm text-muted-foreground">
+              {lead.nextAction || "Not set"}
+            </p>
+          </div>
+          <div>
+            <span className="text-sm font-medium">Follow-up date</span>
+            <p className={`text-sm ${
+              lead.followUpDate && new Date(lead.followUpDate) < new Date()
+                ? "text-destructive font-medium"
+                : "text-muted-foreground"
+            }`}>
+              {lead.followUpDate ? (
+                <>
+                  {formatDateUK(lead.followUpDate)}
+                  {new Date(lead.followUpDate) < new Date() ? " (overdue)" : ""}
+                </>
+              ) : (
+                "Not set"
+              )}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabs */}
       {activeTab !== "edit" ? (
         <div className="border-b border-border">
           <nav className="-mb-px flex gap-6">
@@ -205,68 +223,86 @@ export default async function LeadDetailPage({
 
       {/* Tab content */}
       {activeTab === "overview" && (
-        <>
-          {/* Show conversion UI for won deals */}
-          {lead.deals.some((d) => d.stage === "WON") && (
-            <DealToClientConversion
-              deal={{
-                ...lead.deals.find((d) => d.stage === "WON")!,
-                lead: {
-                  id: lead.id,
-                  name: lead.name,
-                  email: lead.email,
-                  company: lead.company,
-                  clientId: lead.clientId,
-                },
-              }}
-            />
-          )}
-          <LeadActivity lead={lead} />
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Tasks</CardTitle>
-                <CreateTaskForm leadId={id} staffUsers={staffUsers} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              {lead.tasks.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No tasks yet.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {lead.tasks.map((t) => (
-                    <li key={t.id} className="flex justify-between text-sm">
-                      <div>
-                        <span
-                          className={
-                            t.completed
-                              ? "line-through text-muted-foreground"
-                              : ""
-                          }
-                        >
-                          {t.title}
-                        </span>
-                        {t.assignee ? (
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            → {t.assignee.name ?? t.assignee.email}
+        <div className="space-y-6">
+          {/* Deals */}
+          {lead.deals.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Deals</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3">
+                  {lead.deals.map((d) => (
+                    <li key={d.id} className="flex items-center justify-between">
+                      <span className="text-sm">
+                        Stage: <span className="font-medium">{d.stage}</span>
+                        {d.value ? (
+                          <span className="text-muted-foreground ml-2">
+                            ${d.value.toLocaleString()}
                           </span>
                         ) : null}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {t.dueDate && (
-                          <span className="text-muted-foreground text-xs">
-                            {formatDateUK(t.dueDate)}
+                        {d.packageType ? (
+                          <span className="text-muted-foreground ml-2">
+                            ({packageLabel(d.packageType)})
                           </span>
-                        )}
-                        <DeleteTaskButton taskId={t.id} />
-                      </div>
+                        ) : null}
+                      </span>
+                      {d.stage === "WON" && (
+                        <DealToClientConversion dealId={d.id} leadName={lead.name} />
+                      )}
                     </li>
                   ))}
                 </ul>
-              )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Activity */}
+          <LeadActivity lead={lead} />
+
+          {/* Tasks */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Tasks</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <CreateTaskForm leadId={id} staffUsers={staffUsers} />
+                {lead.tasks.length > 0 ? (
+                  <ul className="space-y-2 mt-4">
+                    {lead.tasks.map((t) => (
+                      <li
+                        key={t.id}
+                        className="flex items-center justify-between text-sm border-b pb-2"
+                      >
+                        <div>
+                          <span className={t.completed ? "line-through text-muted-foreground" : ""}>
+                            {t.title}
+                          </span>
+                          {t.assignee ? (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              → {t.assignee.name ?? t.assignee.email}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {t.dueDate && (
+                            <span className="text-muted-foreground text-xs">
+                              {formatDateUK(t.dueDate)}
+                            </span>
+                          )}
+                          <DeleteTaskButton taskId={t.id} />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-4">No tasks yet.</p>
+                )}
+              </div>
             </CardContent>
           </Card>
-        </>
+        </div>
       )}
 
       {activeTab === "conversion" && (

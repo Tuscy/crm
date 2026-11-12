@@ -53,6 +53,27 @@ export async function toggleTaskCompleted(taskId: string) {
   return updated;
 }
 
+export async function updateTask(
+  taskId: string,
+  data: { title?: string; dueDate?: Date | null; notes?: string | null }
+) {
+  await requirePermission("task:update", { entity: "Task", entityId: taskId });
+  const task = await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      title: data.title?.trim(),
+      dueDate: data.dueDate,
+      notes: data.notes?.trim() || null,
+    },
+  });
+  revalidatePath("/dashboard/tasks");
+  revalidatePath("/dashboard/today");
+  if (task.leadId) {
+    revalidatePath(`/dashboard/leads/${task.leadId}`);
+  }
+  return task;
+}
+
 export async function deleteTask(taskId: string) {
   await requirePermission("task:delete", { entity: "Task", entityId: taskId });
   const task = await prisma.task.delete({ where: { id: taskId } });

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button, Card, CardContent } from "@stky/ui";
 import { createTask, deleteTask, toggleTaskCompleted } from "@/lib/server/actions/tasks";
+import { TaskDetailDialog } from "./task-detail-dialog";
 
 const inputClass =
   "rounded-md border border-input bg-background px-3 py-2 text-sm";
@@ -174,17 +175,20 @@ export function PersonalTaskList({ tasks }: { tasks: PersonalTask[] }) {
                       </div>
                     </div>
                   </div>
-                  {canDelete && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={pendingIds.has(task.id)}
-                      onClick={() => handleDelete(task.id)}
-                    >
-                      Delete
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <TaskDetailDialog task={task} />
+                    {canDelete && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={pendingIds.has(task.id)}
+                        onClick={() => handleDelete(task.id)}
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

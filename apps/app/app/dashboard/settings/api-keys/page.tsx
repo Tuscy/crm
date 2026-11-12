@@ -1,7 +1,21 @@
 import { listIntegrationKeys, listSitesForKeys } from "@/lib/server/actions/integration-keys";
+import { currentStaffCan } from "@/lib/server/guard";
 import { IntegrationKeysForm } from "./integration-keys-form";
 
 export default async function IntegrationApiKeysPage() {
+  if (!(await currentStaffCan("integration:read"))) {
+    return (
+      <div className="space-y-6 max-w-3xl">
+        <div>
+          <h1 className="text-2xl font-bold">Integration API keys</h1>
+          <p className="text-sm text-muted-foreground mt-2">
+            You need admin access to view and manage API keys.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const [keys, sites] = await Promise.all([listIntegrationKeys(), listSitesForKeys()]);
 
   return (
