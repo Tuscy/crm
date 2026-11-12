@@ -27,6 +27,7 @@ const BUSINESS_RESOURCES = [
   "emailFlow",
   "emailTemplate",
   "gbp",
+  "ticket",
 ] as const;
 
 /** Areas only admins may touch at all (credentials, connections, people, logs). */

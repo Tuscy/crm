@@ -13,6 +13,11 @@ export const ApiScope = {
   TASKS_READ: "tasks:read",
   TASKS_WRITE: "tasks:write",
   TASKS_DELETE: "tasks:delete",
+  TICKETS_READ: "tickets:read",
+  TICKETS_WRITE: "tickets:write",
+  TICKETS_INTAKE: "tickets:intake",
+  TICKETS_EMAIL: "tickets:email",
+  TICKETS_UPTIME: "tickets:uptime",
 } as const;
 
 export type ApiScopeName = (typeof ApiScope)[keyof typeof ApiScope];
@@ -20,5 +25,13 @@ export type ApiScopeName = (typeof ApiScope)[keyof typeof ApiScope];
 export function scopeAllows(scopes: string[], required: string): boolean {
   if (scopes.includes("*")) return true;
   if (scopes.length === 0) return true;
+  return scopes.includes(required);
+}
+
+/**
+ * Strict variant for tickets: the exact scope must be listed. An empty list or
+ * "*" does NOT grant ticket access, so a broad key can never touch tickets by accident.
+ */
+export function scopeAllowsStrict(scopes: string[], required: string): boolean {
   return scopes.includes(required);
 }

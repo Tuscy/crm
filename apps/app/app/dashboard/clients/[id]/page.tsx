@@ -4,6 +4,10 @@ import { getClientById } from "@/lib/server/actions/clients";
 import { EditClientPackageForm } from "@/components/crm/edit-client-package-form";
 import { SiteBuildsTab } from "@/components/crm/site-builds-tab";
 import { ClientInvoicesCard } from "@/components/xero/client-invoices-card";
+import { TicketsTable } from "@/components/tickets/tickets-table";
+import { listTickets } from "@/lib/server/actions/tickets";
+import { currentStaffCan } from "@/lib/server/guard";
+import { Button } from "@stky/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import { packageLabel } from "@stky/crm";
 import { ClientTasksCard } from "@/components/crm/client-tasks-card";
@@ -19,6 +23,7 @@ const SERVICE_LABELS: Record<string, string> = {
 const TABS = [
   { id: "overview", label: "Overview" },
   { id: "site-builds", label: "Site Builds" },
+  { id: "tickets", label: "Tickets" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -35,7 +40,7 @@ export default async function ClientDetailPage({
   if (!client) notFound();
 
   const activeTab: TabId =
-    rawTab === "site-builds" ? "site-builds" : "overview";
+    rawTab === "site-builds" ? "site-builds" : rawTab === "tickets" ? "tickets" : "overview";
 
   return (
     <div className="space-y-6">
@@ -101,6 +106,9 @@ export default async function ClientDetailPage({
       </div>
 
       {/* Tab content */}
+      {activeTab === "tickets" && (
+        <ClientTicketsTab clientId={client.id} />
+      )}
       {activeTab === "overview" && (
         <>
           <EditClientPackageForm
@@ -377,5 +385,27 @@ export default async function ClientDetailPage({
         <SiteBuildsTab clientId={client.id} siteBuilds={client.siteBuilds} />
       )}
     </div>
+  );
+}
+
+async function ClientTicketsTab({ clientId }: { clientId: string }) {
+  const [tickets, canCreate] = await Promise.all([
+    listTickets({ clientId }),
+    currentStaffCan("ticket:create"),
+  ]);
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Tickets</CardTitle>
+        {canCreate ? (
+          <Button asChild size="sm">
+            <Link href={`/dashboard/tickets/new?clientId=${clientId}`}>New ticket</Link>
+          </Button>
+        ) : null}
+      </CardHeader>
+      <CardContent>
+        <TicketsTable tickets={tickets} showClient={false} />
+      </CardContent>
+    </Card>
   );
 }

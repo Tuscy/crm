@@ -4,7 +4,10 @@ import { Ratelimit } from "@upstash/ratelimit";
 /** Edge-safe client (fetch); default `@upstash/redis` entry targets Node. */
 import { Redis } from "@upstash/redis/cloudflare";
 
-export type RateLimitKind = "api" | "auth" | "general";
+/**
+ * intake: public ticket form, per key + visitor IP. intakeSite: per key overall.
+ */
+export type RateLimitKind = "api" | "auth" | "general" | "intake" | "intakeSite";
 
 const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
 const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -30,7 +33,11 @@ function getLimiter(kind: RateLimitKind): Ratelimit | null {
       ? { requests: 120, window: "1 m" as const }
       : kind === "auth"
         ? { requests: 30, window: "1 m" as const }
-        : { requests: 300, window: "1 m" as const };
+        : kind === "intake"
+          ? { requests: 5, window: "10 m" as const }
+          : kind === "intakeSite"
+            ? { requests: 30, window: "1 h" as const }
+            : { requests: 300, window: "1 m" as const };
 
   const limiter = new Ratelimit({
     redis,
