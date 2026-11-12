@@ -151,6 +151,8 @@ model Task {
   title       String
   dueDate     DateTime?
   completed   Boolean   @default(false)
+  // Set when completed flips to true; cleared when reopened. Used for hide/purge windows.
+  completedAt DateTime?
   leadId      String?
   assigneeId  String?
   notes       String?
@@ -158,6 +160,7 @@ model Task {
   assignee    User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
 
   @@index([assigneeId])
+  @@index([completed, completedAt])
 }
 
 model Contact {

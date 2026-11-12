@@ -38,15 +38,20 @@ export async function toggleTaskCompleted(taskId: string) {
   await requirePermission("task:update", { entity: "Task", entityId: taskId });
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) throw new Error("Task not found");
+  const nextCompleted = !task.completed;
   const updated = await prisma.task.update({
     where: { id: taskId },
-    data: { completed: !task.completed },
+    data: {
+      completed: nextCompleted,
+      completedAt: nextCompleted ? new Date() : null,
+    },
   });
   // Fire only on the false → true transition.
   if (updated.leadId && updated.completed && !task.completed) {
     await enrolMatchingFlows("TASK_COMPLETED", { leadId: updated.leadId });
   }
   revalidatePath("/dashboard/tasks");
+  revalidatePath("/dashboard/today");
   if (updated.leadId) {
     revalidatePath(`/dashboard/leads/${updated.leadId}`);
   }
@@ -92,7 +97,8 @@ export async function getMyTasks() {
       OR: [{ assigneeId: session.user.id }, { assigneeId: null }],
     },
     include: { lead: { select: { id: true, name: true } } },
-    orderBy: [{ completed: "asc" }, { dueDate: "asc" }],
+    // Stable order; UI also sorts with an id tie-breaker after optimistic updates.
+    orderBy: [{ completed: "asc" }, { dueDate: "asc" }, { id: "asc" }],
   });
 }
 
