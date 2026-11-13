@@ -38,19 +38,45 @@ export async function toggleTaskCompleted(taskId: string) {
   await requirePermission("task:update", { entity: "Task", entityId: taskId });
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) throw new Error("Task not found");
+  const nextCompleted = !task.completed;
   const updated = await prisma.task.update({
     where: { id: taskId },
-    data: { completed: !task.completed },
+    data: {
+      completed: nextCompleted,
+      completedAt: nextCompleted ? new Date() : null,
+    },
   });
   // Fire only on the false → true transition.
   if (updated.leadId && updated.completed && !task.completed) {
     await enrolMatchingFlows("TASK_COMPLETED", { leadId: updated.leadId });
   }
   revalidatePath("/dashboard/tasks");
+  revalidatePath("/dashboard/today");
   if (updated.leadId) {
     revalidatePath(`/dashboard/leads/${updated.leadId}`);
   }
   return updated;
+}
+
+export async function updateTask(
+  taskId: string,
+  data: { title?: string; dueDate?: Date | null; notes?: string | null }
+) {
+  await requirePermission("task:update", { entity: "Task", entityId: taskId });
+  const task = await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      title: data.title?.trim(),
+      dueDate: data.dueDate,
+      notes: data.notes?.trim() || null,
+    },
+  });
+  revalidatePath("/dashboard/tasks");
+  revalidatePath("/dashboard/today");
+  if (task.leadId) {
+    revalidatePath(`/dashboard/leads/${task.leadId}`);
+  }
+  return task;
 }
 
 export async function deleteTask(taskId: string) {
@@ -71,7 +97,8 @@ export async function getMyTasks() {
       OR: [{ assigneeId: session.user.id }, { assigneeId: null }],
     },
     include: { lead: { select: { id: true, name: true } } },
-    orderBy: [{ completed: "asc" }, { dueDate: "asc" }],
+    // Stable order; UI also sorts with an id tie-breaker after optimistic updates.
+    orderBy: [{ completed: "asc" }, { dueDate: "asc" }, { id: "asc" }],
   });
 }
 

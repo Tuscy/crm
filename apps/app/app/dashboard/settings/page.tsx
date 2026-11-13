@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@stky/ui";
 import { prisma } from "@stky/db";
+import { currentStaffCan } from "@/lib/server/guard";
 
 function envSet(key: string): boolean {
   return Boolean(process.env[key]?.trim());
@@ -45,6 +46,12 @@ function SettingsCard({
 }
 
 export default async function SettingsPage() {
+  const [canReadIntegrations, canReadUsers, canReadAudit] = await Promise.all([
+    currentStaffCan("integration:read"),
+    currentStaffCan("user:read"),
+    currentStaffCan("audit:read"),
+  ]);
+
   const xeroConnected =
     envSet("XERO_CLIENT_ID") &&
     envSet("XERO_CLIENT_SECRET") &&
@@ -96,23 +103,29 @@ export default async function SettingsPage() {
           status={<StatusDot ok={xeroConnected} />}
         />
 
-        <SettingsCard
-          title="API Keys"
-          description="Scoped integration keys for automation and webhooks."
-          href="/dashboard/settings/api-keys"
-        />
+        {canReadIntegrations && (
+          <SettingsCard
+            title="API Keys"
+            description="Scoped integration keys for automation and webhooks."
+            href="/dashboard/settings/api-keys"
+          />
+        )}
 
-        <SettingsCard
-          title="Team & permissions"
-          description="Add staff accounts and set what each can do (admin, editor, viewer)."
-          href="/dashboard/settings/team"
-        />
+        {canReadUsers && (
+          <SettingsCard
+            title="Team & permissions"
+            description="Add staff accounts and set what each can do (admin, editor, viewer)."
+            href="/dashboard/settings/team"
+          />
+        )}
 
-        <SettingsCard
-          title="Audit log"
-          description="Who changed or deleted what, and any blocked attempts."
-          href="/dashboard/settings/audit-log"
-        />
+        {canReadAudit && (
+          <SettingsCard
+            title="Audit log"
+            description="Who changed or deleted what, and any blocked attempts."
+            href="/dashboard/settings/audit-log"
+          />
+        )}
 
         {/* Webhooks & Automations — read-only env status */}
         <Card>

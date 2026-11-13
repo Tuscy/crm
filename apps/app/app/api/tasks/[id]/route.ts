@@ -62,6 +62,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
+    const completedAtUpdate =
+      completed === undefined
+        ? {}
+        : completed
+          ? { completed: true, completedAt: existing.completed ? existing.completedAt : new Date() }
+          : { completed: false, completedAt: null };
+
     const task = await prisma.task.update({
       where: { id },
       data: {
@@ -69,7 +76,7 @@ export async function PATCH(
         ...(dueDate !== undefined && {
           dueDate: dueDate ? new Date(dueDate) : null,
         }),
-        ...(completed !== undefined && { completed }),
+        ...completedAtUpdate,
         ...(assigneeId !== undefined && { assigneeId }),
         ...(leadId !== undefined && { leadId }),
       },
